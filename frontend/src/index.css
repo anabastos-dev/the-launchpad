@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+*, *::before, *::after { box-sizing: border-box; }
+body { background: #FAF9F7; color: #18181B; font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; margin: 0; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: #D3D1C7; border-radius: 3px; }
+a { text-decoration: none; }
+* { transition: none; }
