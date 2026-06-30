@@ -6,13 +6,10 @@ import Dashboard from './pages/Dashboard.jsx'
 import CampaignPage from './pages/CampaignPage.jsx'
 import AlertsPage from './pages/AlertsPage.jsx'
 import CalendarPage from './pages/CalendarPage.jsx'
-import { ALERTS } from './mock.js'
-
 function AppShell({ onLogout }) {
-  const highCount = ALERTS.filter(a => a.severidade === 'HIGH').length
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar onLogout={onLogout} userName="Ana Bastos" alertCount={highCount} />
+      <Sidebar onLogout={onLogout} userName="Ana Bastos" alertCount={0} />
       <main style={{ flex: 1, background: '#FAF9F7', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div style={{ flex: 1 }}>
           <Routes>
