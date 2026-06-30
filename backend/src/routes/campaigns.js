@@ -1,14 +1,13 @@
 import { Router } from 'express'
-import { authMiddleware } from '../auth.js'
 import * as clickup from '../clickup.js'
 import { buildDependencyGraph, propagateCascade, getRealStatus, computeRisk } from '../bottleneck.js'
 import * as cache from '../cache.js'
 import { FIELD_IDS, getFieldValue } from '../fieldMap.js'
 
 const router = Router()
-router.use(authMiddleware)
 
-const FOLDER_ID = () => process.env.CLICKUP_FOLDER_ID
+const FOLDER_ID    = () => process.env.CLICKUP_FOLDER_ID
+const CAMPAIGN_LIST = () => process.env.CLICKUP_TEMPLATE_LIST_ID  // "Campanhas (em construção)"
 
 async function getGraph(listId, force = false) {
   const key = `graph:${listId}`
@@ -34,10 +33,45 @@ async function getAlerts(listId, force = false) {
 }
 
 // GET /api/campaigns
+// Returns campaign tasks from the "Campanhas (em construção)" list
 router.get('/', async (req, res) => {
   try {
-    const lists = await clickup.getLists(FOLDER_ID())
-    res.json(lists.map(l => ({ id: l.id, name: l.name })))
+    const tasks = await clickup.getCampaignTasks(CAMPAIGN_LIST())
+    res.json(tasks
+      .filter(t => !t.name.toUpperCase().startsWith('TEMPLATE'))
+      .map(t => ({
+        id: t.id,
+        name: t.name,
+        status: t.status?.status,
+        url: t.url,
+      })))
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// GET /api/campaigns/:id/subtasks — subtasks with RACI for a campaign task
+router.get('/:id/subtasks', async (req, res) => {
+  try {
+    const subtasks = await clickup.getSubtasks(req.params.id, CAMPAIGN_LIST())
+    const { FIELD_IDS, getFieldValue, getPeopleField, getPeopleArrayField } = await import('../fieldMap.js')
+    res.json(subtasks.map(t => ({
+      id: t.id,
+      name: t.name,
+      status: t.status?.status,
+      statusType: t.status?.type,
+      due_date: t.due_date,
+      start_date: t.start_date,
+      url: t.url,
+      responsavel: getPeopleField(t, FIELD_IDS.responsavel),
+      aprovador: getPeopleField(t, FIELD_IDS.aprovador),
+      consultar: getFieldValue(t, FIELD_IDS.consultar),
+      informar: getPeopleArrayField(t, FIELD_IDS.informar),
+      fase: getFieldValue(t, FIELD_IDS.faseCampanha),
+      canal: getFieldValue(t, FIELD_IDS.canal),
+      etapaLimitante: getFieldValue(t, FIELD_IDS.etapaLimitante) === 'Sim',
+      leadTime: getFieldValue(t, FIELD_IDS.leadTime),
+    })))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

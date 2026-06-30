@@ -34,7 +34,7 @@ export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem('minimal_token'))
   function handleLogin(tk) { localStorage.setItem('minimal_token', tk); setToken(tk) }
   function handleLogout() { localStorage.removeItem('minimal_token'); setToken(null) }
-  if (!token) return <Login onLogin={handleLogin} />
+  // if (!token) return <Login onLogin={handleLogin} />
   return (
     <BrowserRouter>
       <AppShell onLogout={handleLogout} />

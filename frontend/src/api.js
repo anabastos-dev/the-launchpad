@@ -13,9 +13,7 @@ async function request(path, options = {}) {
     },
   })
   if (res.status === 401) {
-    localStorage.removeItem('minimal_token')
-    window.location.reload()
-    return
+    throw new Error('Não autorizado')
   }
   const data = await res.json()
   if (!res.ok) throw new Error(data.error || 'Erro desconhecido')
