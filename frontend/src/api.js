@@ -35,6 +35,8 @@ export const api = {
   refresh: (id) => request(`/campaigns/${id}/refresh`, { method: 'POST' }),
   updateStatus: (taskId, status) =>
     request(`/tasks/${taskId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  updateDates: (taskId, { start_date, due_date }) =>
+    request(`/tasks/${taskId}/dates`, { method: 'PATCH', body: JSON.stringify({ start_date, due_date }) }),
   addComment: (taskId, text) =>
     request(`/tasks/${taskId}/comment`, { method: 'POST', body: JSON.stringify({ text }) }),
   getComments: (taskId) => request(`/tasks/${taskId}/comments`),

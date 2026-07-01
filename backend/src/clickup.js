@@ -61,6 +61,14 @@ export async function updateTaskStatus(taskId, statusName) {
   return data
 }
 
+export async function updateTaskDates(taskId, { start_date, due_date }) {
+  const body = {}
+  if (start_date !== undefined) body.start_date = start_date
+  if (due_date  !== undefined) body.due_date  = due_date
+  const { data } = await axios.put(`${BASE}/task/${taskId}`, body, { headers: headers() })
+  return data
+}
+
 export async function updateTaskField(taskId, fieldId, value) {
   const { data } = await axios.post(`${BASE}/task/${taskId}/field/${fieldId}`, {
     value,
@@ -89,4 +97,34 @@ export async function getAttachments(taskId) {
 export async function getListDetails(listId) {
   const { data } = await axios.get(`${BASE}/list/${listId}`, { headers: headers() })
   return data
+}
+
+// Get all tasks in a list that are top-level campaign tasks (no parent)
+export async function getCampaignTasks(listId) {
+  const { data } = await axios.get(`${BASE}/list/${listId}/task`, {
+    headers: headers(),
+    params: { include_closed: true, subtasks: false },
+  })
+  return data.tasks || []
+}
+
+// Get subtasks of a campaign task (the actual execution tasks with RACI)
+export async function getSubtasks(parentTaskId, listId) {
+  const allTasks = []
+  let page = 0
+  while (true) {
+    const { data } = await axios.get(`${BASE}/list/${listId}/task`, {
+      headers: headers(),
+      params: {
+        page,
+        parent: parentTaskId,
+        subtasks: true,
+        include_closed: true,
+      },
+    })
+    allTasks.push(...(data.tasks || []))
+    if (data.last_page) break
+    page++
+  }
+  return allTasks
 }

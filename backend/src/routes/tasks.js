@@ -1,10 +1,8 @@
 import { Router } from 'express'
-import { authMiddleware } from '../auth.js'
 import * as clickup from '../clickup.js'
 import * as cache from '../cache.js'
 
 const router = Router()
-router.use(authMiddleware)
 
 router.patch('/:id/status', async (req, res) => {
   try {
@@ -23,6 +21,17 @@ router.patch('/:id/fields', async (req, res) => {
     const result = await clickup.updateTaskField(req.params.id, fieldId, value)
     cache.flush()
     res.json(result)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.patch('/:id/dates', async (req, res) => {
+  try {
+    const { start_date, due_date } = req.body
+    const task = await clickup.updateTaskDates(req.params.id, { start_date, due_date })
+    cache.flush()
+    res.json(task)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }

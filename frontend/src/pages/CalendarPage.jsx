@@ -1,105 +1,111 @@
-import { useState } from 'react'
-import { CAMPAIGNS } from '../mock.js'
+import { useState, useEffect } from 'react'
+import { api } from '../api.js'
 import MissionGantt from '../components/MissionGantt.jsx'
 
-function parseDate(str) {
-  const [y, m, d] = str.split('-').map(Number)
-  return new Date(y, m - 1, d)
-}
-
-const TODAY = parseDate('2026-06-29')
-
-const RISK_COLOR = {
-  HIGH:   '#E24B4A',
-  MEDIUM: '#EF9F27',
-  OK:     '#22C55E',
-}
-
-// Copa do Brasil game days in July
 const COPA_DAYS = new Set([5, 11, 15, 19])
+const DAYS_OF_WEEK = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
-// July 1 2026 = Wednesday → offset 2 in Mon-first grid (Mon=0)
-const JULY_OFFSET = 2
+const STATUS_RISK = {
+  'em produção':     'MEDIUM',
+  'em planejamento': 'OK',
+  'kickoff':         'OK',
+  'pré-lançamento':  'MEDIUM',
+  'live':            'OK',
+  'concluída':       'OK',
+  'atrasada':        'HIGH',
+  'bloqueada':       'HIGH',
+}
+const RISK_COLOR = { HIGH: '#E24B4A', MEDIUM: '#EF9F27', OK: '#22C55E' }
 
-function getCampaignsForDay(month, day) {
-  const date = month === 6
-    ? parseDate(`2026-06-${String(day).padStart(2,'0')}`)
-    : parseDate(`2026-07-${String(day).padStart(2,'0')}`)
-  return CAMPAIGNS.filter(c => {
-    const start = parseDate(c.lancamento)
-    const end   = parseDate(c.encerramento || c.lancamento)
-    return date >= start && date <= end
+function msToDateStr(ms) {
+  if (!ms) return ''
+  const d = new Date(Number(ms))
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function dateStrToMs(str) {
+  if (!str) return null
+  const [y, m, d] = str.split('-').map(Number)
+  return new Date(y, m - 1, d).getTime()
+}
+
+function monthOffset(year, month) {
+  // Day of week for 1st of month, Monday=0
+  const dow = new Date(year, month - 1, 1).getDay()
+  return dow === 0 ? 6 : dow - 1
+}
+
+function getCampaignsForDay(campaigns, year, month, day) {
+  const ts = new Date(year, month - 1, day).getTime()
+  return campaigns.filter(c => {
+    const s = c.start_date ? Number(c.start_date) : null
+    const e = c.due_date   ? Number(c.due_date)   : s
+    if (!s) return false
+    const dayStart = new Date(year, month - 1, day, 0,  0,  0).getTime()
+    const dayEnd   = new Date(year, month - 1, day, 23, 59, 59).getTime()
+    return s <= dayEnd && e >= dayStart
   })
 }
 
-const DAYS_OF_WEEK = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+function MonthGrid({ year, month, label, campaigns, onCampaignClick }) {
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const offset = monthOffset(year, month)
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`
 
-function MonthGrid({ month, year, daysInMonth, offset, label }) {
   const cells = []
   for (let i = 0; i < offset; i++) cells.push(null)
   for (let d = 1; d <= daysInMonth; d++) cells.push(d)
   while (cells.length % 7 !== 0) cells.push(null)
 
-  const isToday = (d) => month === 6 && d === 29
+  const isToday = (d) => year === today.getFullYear() && month === today.getMonth() + 1 && d === today.getDate()
 
   return (
     <div>
       <p style={{ fontSize: 11, fontWeight: 700, color: '#18181B', letterSpacing: '0.04em', textTransform: 'uppercase', margin: '0 0 12px' }}>{label}</p>
-      {/* Day headers */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4, gap: 3 }}>
         {DAYS_OF_WEEK.map(d => (
           <div key={d} style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.06em', padding: '4px 0' }}>{d}</div>
         ))}
       </div>
-      {/* Day cells */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
         {cells.map((day, i) => {
           if (!day) return <div key={`e-${i}`} />
-
-          const campaigns = getCampaignsForDay(month, day)
-          const copa      = month === 7 && COPA_DAYS.has(day)
-          const today     = isToday(day)
-          const weekend   = (i % 7 === 5) || (i % 7 === 6)
-
+          const dayCampaigns = getCampaignsForDay(campaigns, year, month, day)
+          const copa    = month === 7 && COPA_DAYS.has(day)
+          const today   = isToday(day)
+          const weekend = (i % 7 === 5) || (i % 7 === 6)
           return (
             <div key={day} style={{
-              minHeight: 72,
-              borderRadius: 8,
+              minHeight: 72, borderRadius: 8,
               border: today ? '1.5px solid #E8472A' : '1px solid #E4E4E7',
               background: today ? '#FFF5F3' : weekend ? '#FAFAFA' : '#FFFFFF',
-              padding: '6px 7px',
-              position: 'relative',
-              overflow: 'hidden',
+              padding: '6px 7px', position: 'relative', overflow: 'hidden',
             }}>
-              {/* Day number */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{
-                  fontSize: 11, fontWeight: today ? 800 : 500,
-                  color: today ? '#E8472A' : weekend ? '#A1A1AA' : '#52525B',
-                  lineHeight: 1,
-                }}>
+                <span style={{ fontSize: 11, fontWeight: today ? 800 : 500, color: today ? '#E8472A' : weekend ? '#A1A1AA' : '#52525B', lineHeight: 1 }}>
                   {day}
                 </span>
                 {copa && <span style={{ fontSize: 10, lineHeight: 1 }}>⚽</span>}
               </div>
-
-              {/* Campaign pills */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {campaigns.map(c => (
-                  <div key={c.id} style={{
-                    background: RISK_COLOR[c.risco] || RISK_COLOR.OK,
-                    borderRadius: 3,
-                    padding: '2px 5px',
-                    opacity: 0.82,
-                  }}>
-                    <span style={{ fontSize: 8, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: '100%', letterSpacing: '0.02em' }}>
-                      {c.name.split(' —')[0]}
-                    </span>
-                  </div>
-                ))}
+                {dayCampaigns.map(c => {
+                  const risk = STATUS_RISK[(c.status || '').toLowerCase()] || 'OK'
+                  const color = RISK_COLOR[risk]
+                  return (
+                    <div key={c.id} onClick={() => onCampaignClick(c)} style={{
+                      background: color, borderRadius: 3, padding: '2px 5px', opacity: 0.85, cursor: 'pointer',
+                    }}>
+                      <span style={{ fontSize: 8, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: '100%', letterSpacing: '0.02em' }}>
+                        {c.name.split(' —')[0]}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
-
-              {/* Today label */}
               {today && (
                 <div style={{ position: 'absolute', bottom: 4, right: 5, fontSize: 7.5, fontWeight: 800, color: '#E8472A', letterSpacing: '0.08em', textTransform: 'uppercase' }}>hoje</div>
               )}
@@ -111,29 +117,108 @@ function MonthGrid({ month, year, daysInMonth, offset, label }) {
   )
 }
 
+function EditModal({ campaign, onClose, onSave }) {
+  const [startStr, setStartStr] = useState(msToDateStr(campaign.start_date))
+  const [dueStr,   setDueStr]   = useState(msToDateStr(campaign.due_date))
+  const [saving,   setSaving]   = useState(false)
+  const [error,    setError]    = useState(null)
+
+  async function handleSave() {
+    setSaving(true)
+    setError(null)
+    try {
+      await api.updateDates(campaign.id, {
+        start_date: dateStrToMs(startStr),
+        due_date:   dateStrToMs(dueStr),
+      })
+      onSave({ ...campaign, start_date: String(dateStrToMs(startStr)), due_date: String(dateStrToMs(dueStr)) })
+    } catch (e) {
+      setError(e.message)
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: '#fff', borderRadius: 14, padding: '28px 32px', width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 4px' }}>Editar datas</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#18181B', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.3, maxWidth: 260 }}>{campaign.name}</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A1A1AA', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
+        </div>
+
+        {/* Date fields */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#71717A', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Início</span>
+            <input type="date" value={startStr} onChange={e => setStartStr(e.target.value)}
+              style={{ border: '1px solid #E4E4E7', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#18181B', outline: 'none', fontFamily: 'inherit' }} />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#71717A', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Entrega / Lançamento</span>
+            <input type="date" value={dueStr} onChange={e => setDueStr(e.target.value)}
+              style={{ border: '1px solid #E4E4E7', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#18181B', outline: 'none', fontFamily: 'inherit' }} />
+          </label>
+        </div>
+
+        {error && <p style={{ fontSize: 11, color: '#E24B4A', margin: '0 0 12px' }}>{error}</p>}
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onClose} style={{ flex: 1, border: '1px solid #E4E4E7', background: '#fff', borderRadius: 8, padding: '9px 0', fontSize: 12, fontWeight: 600, color: '#71717A', cursor: 'pointer' }}>
+            Cancelar
+          </button>
+          <button onClick={handleSave} disabled={saving}
+            style={{ flex: 2, border: 'none', background: '#18181B', borderRadius: 8, padding: '9px 0', fontSize: 12, fontWeight: 600, color: '#fff', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saving ? 'Salvando…' : 'Salvar no ClickUp'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CalendarPage() {
-  const [view, setView] = useState('calendar')
+  const [view,       setView]       = useState('calendar')
+  const [campaigns,  setCampaigns]  = useState([])
+  const [loading,    setLoading]    = useState(true)
+  const [editing,    setEditing]    = useState(null)
+
+  useEffect(() => {
+    api.getCampaigns()
+      .then(data => { setCampaigns(data); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  function handleSave(updated) {
+    setCampaigns(cs => cs.map(c => c.id === updated.id ? updated : c))
+    setEditing(null)
+  }
+
+  const today = new Date()
+  const year  = today.getFullYear()
 
   return (
     <div style={{ padding: '40px 44px 64px', maxWidth: 1100 }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
           <p style={{ fontSize: 11, color: '#A1A1AA', margin: '0 0 6px', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>Mission Control</p>
           <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.04em', color: '#18181B', margin: '0 0 6px', lineHeight: 1 }}>Launch Timeline</h1>
-          <p style={{ fontSize: 12, color: '#A1A1AA', margin: 0 }}>Jun–Jul 2026 · {CAMPAIGNS.length} missions</p>
+          <p style={{ fontSize: 12, color: '#A1A1AA', margin: 0 }}>
+            {loading ? 'Carregando…' : `${campaigns.length} campanhas`}
+            {!loading && <span style={{ color: '#A1A1AA' }}> · clique em uma campanha para editar datas</span>}
+          </p>
         </div>
-
-        {/* View toggle */}
         <div style={{ display: 'flex', border: '1px solid #E4E4E7', borderRadius: 8, overflow: 'hidden' }}>
           {[['gantt', 'Timeline'], ['calendar', 'Calendário']].map(([key, label]) => (
             <button key={key} onClick={() => setView(key)} style={{
               padding: '7px 16px', fontSize: 11, fontWeight: 600,
               background: view === key ? '#18181B' : 'transparent',
               color: view === key ? '#FFFFFF' : '#71717A',
-              border: 'none', cursor: 'pointer',
-              letterSpacing: '0.02em',
-              transition: 'all 0.15s',
+              border: 'none', cursor: 'pointer', letterSpacing: '0.02em',
             }}>
               {label}
             </button>
@@ -145,21 +230,9 @@ export default function CalendarPage() {
         <MissionGantt />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-          {/* June — only last week (29 = hoje) */}
-          <MonthGrid
-            month={6} year={2026}
-            daysInMonth={30}
-            offset={0}   /* June 1 = Monday */
-            label="Junho 2026"
-          />
-          <MonthGrid
-            month={7} year={2026}
-            daysInMonth={31}
-            offset={JULY_OFFSET}
-            label="Julho 2026"
-          />
+          <MonthGrid year={year} month={7} label="Julho 2026" campaigns={campaigns} onCampaignClick={setEditing} />
+          <MonthGrid year={year} month={8} label="Agosto 2026" campaigns={campaigns} onCampaignClick={setEditing} />
 
-          {/* Legend */}
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
             {[['#E24B4A','Crítico'],['#EF9F27','Em risco'],['#22C55E','On track']].map(([color, label]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -177,6 +250,10 @@ export default function CalendarPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {editing && (
+        <EditModal campaign={editing} onClose={() => setEditing(null)} onSave={handleSave} />
       )}
     </div>
   )

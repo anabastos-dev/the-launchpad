@@ -44,6 +44,8 @@ router.get('/', async (req, res) => {
         name: t.name,
         status: t.status?.status,
         url: t.url,
+        start_date: t.start_date,
+        due_date: t.due_date,
       })))
   } catch (err) {
     res.status(500).json({ error: err.message })
