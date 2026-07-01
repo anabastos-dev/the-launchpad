@@ -29,6 +29,7 @@ export const api = {
   getTasks: (id) => request(`/campaigns/${id}/tasks`),
   getDirecionamento: (id) => request(`/campaigns/${id}/direcionamento`),
   getAssets: (id) => request(`/campaigns/${id}/assets`),
+  getSubtasks: (id) => request(`/campaigns/${id}/subtasks`),
   getCalendario: (id) => request(`/campaigns/${id}/calendario`),
   getDebriefing: (id) => request(`/campaigns/${id}/debriefing`),
   getOfertas: (id) => request(`/campaigns/${id}/ofertas`),
