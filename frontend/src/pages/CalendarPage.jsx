@@ -17,6 +17,20 @@ const STATUS_RISK = {
 }
 const RISK_COLOR = { HIGH: '#E24B4A', MEDIUM: '#EF9F27', OK: '#22C55E' }
 
+const PALETTE = [
+  '#E8472A', '#EF9F27', '#22C55E', '#185FA5', '#7C3AED',
+  '#EC4899', '#0EA5E9', '#14B8A6', '#F97316', '#6366F1',
+  '#84CC16', '#8B5CF6', '#18181B', '#64748B',
+]
+
+const COLORS_KEY = 'launchpad_campaign_colors'
+function loadColors() {
+  try { return JSON.parse(localStorage.getItem(COLORS_KEY) || '{}') } catch { return {} }
+}
+function saveColors(obj) {
+  localStorage.setItem(COLORS_KEY, JSON.stringify(obj))
+}
+
 function msToDateStr(ms) {
   if (!ms) return ''
   const d = new Date(Number(ms))
@@ -50,7 +64,7 @@ function getCampaignsForDay(campaigns, year, month, day) {
   })
 }
 
-function MonthGrid({ year, month, label, campaigns, onCampaignClick }) {
+function MonthGrid({ year, month, label, campaigns, onCampaignClick, colors }) {
   const daysInMonth = new Date(year, month, 0).getDate()
   const offset = monthOffset(year, month)
   const today = new Date()
@@ -93,11 +107,11 @@ function MonthGrid({ year, month, label, campaigns, onCampaignClick }) {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {dayCampaigns.map(c => {
-                  const risk = STATUS_RISK[(c.status || '').toLowerCase()] || 'OK'
-                  const color = RISK_COLOR[risk]
+                  const risk  = STATUS_RISK[(c.status || '').toLowerCase()] || 'OK'
+                  const color = colors[c.id] || RISK_COLOR[risk]
                   return (
                     <div key={c.id} onClick={() => onCampaignClick(c)} style={{
-                      background: color, borderRadius: 3, padding: '2px 5px', opacity: 0.85, cursor: 'pointer',
+                      background: color, borderRadius: 3, padding: '2px 5px', cursor: 'pointer',
                     }}>
                       <span style={{ fontSize: 8, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: '100%', letterSpacing: '0.02em' }}>
                         {c.name.split(' —')[0]}
@@ -117,11 +131,17 @@ function MonthGrid({ year, month, label, campaigns, onCampaignClick }) {
   )
 }
 
-function EditModal({ campaign, onClose, onSave }) {
-  const [startStr, setStartStr] = useState(msToDateStr(campaign.start_date))
-  const [dueStr,   setDueStr]   = useState(msToDateStr(campaign.due_date))
-  const [saving,   setSaving]   = useState(false)
-  const [error,    setError]    = useState(null)
+function EditModal({ campaign, onClose, onSave, colors, onColorChange }) {
+  const [startStr,  setStartStr]  = useState(msToDateStr(campaign.start_date))
+  const [dueStr,    setDueStr]    = useState(msToDateStr(campaign.due_date))
+  const [color,     setColor]     = useState(colors[campaign.id] || '')
+  const [saving,    setSaving]    = useState(false)
+  const [error,     setError]     = useState(null)
+
+  function handleColorPick(c) {
+    setColor(c)
+    onColorChange(campaign.id, c)
+  }
 
   async function handleSave() {
     setSaving(true)
@@ -138,30 +158,50 @@ function EditModal({ campaign, onClose, onSave }) {
     }
   }
 
+  const labelStyle = { fontSize: 10, fontWeight: 700, color: '#71717A', letterSpacing: '0.06em', textTransform: 'uppercase' }
+  const inputStyle = { border: '1px solid #E4E4E7', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#18181B', outline: 'none', fontFamily: 'inherit' }
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: '#fff', borderRadius: 14, padding: '28px 32px', width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
-        {/* Header */}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: '#fff', borderRadius: 14, padding: '28px 32px', width: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
-            <p style={{ fontSize: 10, fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 4px' }}>Editar datas</p>
-            <p style={{ fontSize: 15, fontWeight: 700, color: '#18181B', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.3, maxWidth: 260 }}>{campaign.name}</p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 4px' }}>Editar campanha</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#18181B', margin: 0, letterSpacing: '-0.02em', lineHeight: 1.3, maxWidth: 280 }}>{campaign.name}</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A1A1AA', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
         </div>
 
+        {/* Color picker */}
+        <div style={{ marginBottom: 18 }}>
+          <p style={{ ...labelStyle, margin: '0 0 8px' }}>Cor no calendário</p>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {PALETTE.map(c => (
+              <button key={c} onClick={() => handleColorPick(c)} style={{
+                width: 26, height: 26, borderRadius: '50%', background: c, border: 'none', cursor: 'pointer',
+                outline: color === c ? `3px solid ${c}` : '3px solid transparent',
+                outlineOffset: 2, transition: 'outline 0.1s',
+              }} />
+            ))}
+            {color && (
+              <button onClick={() => handleColorPick('')} title="Remover cor" style={{
+                width: 26, height: 26, borderRadius: '50%', background: '#F4F4F5',
+                border: '1px dashed #D4D4D8', cursor: 'pointer', fontSize: 12, color: '#A1A1AA', lineHeight: 1,
+              }}>×</button>
+            )}
+          </div>
+        </div>
+
         {/* Date fields */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#71717A', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Início</span>
-            <input type="date" value={startStr} onChange={e => setStartStr(e.target.value)}
-              style={{ border: '1px solid #E4E4E7', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#18181B', outline: 'none', fontFamily: 'inherit' }} />
+            <span style={labelStyle}>Início</span>
+            <input type="date" value={startStr} onChange={e => setStartStr(e.target.value)} style={inputStyle} />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#71717A', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Entrega / Lançamento</span>
-            <input type="date" value={dueStr} onChange={e => setDueStr(e.target.value)}
-              style={{ border: '1px solid #E4E4E7', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#18181B', outline: 'none', fontFamily: 'inherit' }} />
+            <span style={labelStyle}>Lançamento</span>
+            <input type="date" value={dueStr} onChange={e => setDueStr(e.target.value)} style={inputStyle} />
           </label>
         </div>
 
@@ -172,8 +212,8 @@ function EditModal({ campaign, onClose, onSave }) {
             Cancelar
           </button>
           <button onClick={handleSave} disabled={saving}
-            style={{ flex: 2, border: 'none', background: '#18181B', borderRadius: 8, padding: '9px 0', fontSize: 12, fontWeight: 600, color: '#fff', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-            {saving ? 'Salvando…' : 'Salvar no ClickUp'}
+            style={{ flex: 2, border: 'none', background: color || '#18181B', borderRadius: 8, padding: '9px 0', fontSize: 12, fontWeight: 600, color: '#fff', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saving ? 'Salvando…' : 'Salvar'}
           </button>
         </div>
       </div>
@@ -264,12 +304,20 @@ export default function CalendarPage() {
   const [loading,    setLoading]    = useState(true)
   const [editing,    setEditing]    = useState(null)
   const [creating,   setCreating]   = useState(false)
+  const [colors,     setColors]     = useState(loadColors)
 
   useEffect(() => {
     api.getCampaigns()
       .then(data => { setCampaigns(data); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
+
+  function handleColorChange(id, color) {
+    const next = { ...colors, [id]: color }
+    if (!color) delete next[id]
+    setColors(next)
+    saveColors(next)
+  }
 
   function handleSave(updated) {
     setCampaigns(cs => cs.map(c => c.id === updated.id ? updated : c))
@@ -322,8 +370,8 @@ export default function CalendarPage() {
         <MissionGantt />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-          <MonthGrid year={year} month={7} label="Julho 2026" campaigns={campaigns} onCampaignClick={setEditing} />
-          <MonthGrid year={year} month={8} label="Agosto 2026" campaigns={campaigns} onCampaignClick={setEditing} />
+          <MonthGrid year={year} month={7} label="Julho 2026"  campaigns={campaigns} onCampaignClick={setEditing} colors={colors} />
+          <MonthGrid year={year} month={8} label="Agosto 2026" campaigns={campaigns} onCampaignClick={setEditing} colors={colors} />
 
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
             {[['#E24B4A','Crítico'],['#EF9F27','Em risco'],['#22C55E','On track']].map(([color, label]) => (
@@ -344,7 +392,7 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {editing  && <EditModal  campaign={editing} onClose={() => setEditing(null)}  onSave={handleSave} />}
+      {editing  && <EditModal  campaign={editing} onClose={() => setEditing(null)}  onSave={handleSave} colors={colors} onColorChange={handleColorChange} />}
       {creating && <CreateModal                   onClose={() => setCreating(false)} onCreate={handleCreate} />}
     </div>
   )
