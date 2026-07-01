@@ -24,6 +24,8 @@ export const api = {
   login: (user, password) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ user, password }) }),
   getCampaigns: () => request('/campaigns'),
+  createCampaign: ({ name, start_date, due_date }) =>
+    request('/campaigns', { method: 'POST', body: JSON.stringify({ name, start_date, due_date }) }),
   getCampaign: (id) => request(`/campaigns/${id}`),
   getAlerts: (id) => request(`/campaigns/${id}/alerts`),
   getTasks: (id) => request(`/campaigns/${id}/tasks`),

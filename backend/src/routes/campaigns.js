@@ -52,6 +52,19 @@ router.get('/', async (req, res) => {
   }
 })
 
+// POST /api/campaigns — create a new campaign task in ClickUp
+router.post('/', async (req, res) => {
+  try {
+    const { name, start_date, due_date } = req.body
+    if (!name?.trim()) return res.status(400).json({ error: 'Nome obrigatório' })
+    const task = await clickup.createCampaignTask(CAMPAIGN_LIST(), { name: name.trim(), start_date, due_date })
+    cache.del('campaigns')
+    res.status(201).json({ id: task.id, name: task.name, status: task.status?.status, url: task.url, start_date: task.start_date, due_date: task.due_date })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // GET /api/campaigns/:id/subtasks — subtasks with RACI for a campaign task
 router.get('/:id/subtasks', async (req, res) => {
   try {

@@ -61,6 +61,14 @@ export async function updateTaskStatus(taskId, statusName) {
   return data
 }
 
+export async function createCampaignTask(listId, { name, start_date, due_date }) {
+  const body = { name }
+  if (start_date) body.start_date = start_date
+  if (due_date)   body.due_date   = due_date
+  const { data } = await axios.post(`${BASE}/list/${listId}/task`, body, { headers: headers() })
+  return data
+}
+
 export async function updateTaskDates(taskId, { start_date, due_date }) {
   const body = {}
   if (start_date !== undefined) body.start_date = start_date
