@@ -4,16 +4,18 @@ import { api } from '../api.js'
 const COPA_DAYS = new Set([5, 11, 15, 19])
 const DAYS_OF_WEEK = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
-const EVENT_TYPES = ['Post', 'Story', 'Reels', 'Clipe', 'Email', 'Ad', 'Outro']
+const EVENT_TYPES = ['Campanha', 'Oferta', 'Relançamento', 'Urgência', 'CRM', 'Live', 'Influencer', 'Sazonalidade', 'Outro']
 
 const TYPE_COLORS = {
-  Post:   '#E8472A',
-  Story:  '#7C3AED',
-  Reels:  '#EC4899',
-  Clipe:  '#0EA5E9',
-  Email:  '#EF9F27',
-  Ad:     '#22C55E',
-  Outro:  '#71717A',
+  Campanha:      '#E8472A',
+  Oferta:        '#EF9F27',
+  Relançamento:  '#185FA5',
+  Urgência:      '#E24B4A',
+  CRM:           '#7C3AED',
+  Live:          '#22C55E',
+  Influencer:    '#EC4899',
+  Sazonalidade:  '#14B8A6',
+  Outro:         '#71717A',
 }
 
 const PALETTE = [
