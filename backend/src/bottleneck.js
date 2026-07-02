@@ -25,7 +25,7 @@ export async function buildDependencyGraph(listId, clickup) {
       blockedBy: [],
       blocks: [],
       bloqueiaQualNome: getFieldValue(task, FIELD_IDS.bloqueiaQual),
-      responsavel: getPeopleField(task, FIELD_IDS.responsavel),
+      responsavel: getPeopleField(task, FIELD_IDS.responsavel) || task.assignees?.[0]?.username || null,
       aprovador: getPeopleField(task, FIELD_IDS.aprovador),
       consultar: getFieldValue(task, FIELD_IDS.consultar),
       informar: getPeopleArrayField(task, FIELD_IDS.informar),

@@ -6,8 +6,16 @@ import { FIELD_IDS, getFieldValue } from '../fieldMap.js'
 
 const router = Router()
 
-const FOLDER_ID    = () => process.env.CLICKUP_FOLDER_ID
-const CAMPAIGN_LIST = () => process.env.CLICKUP_TEMPLATE_LIST_ID  // "Campanhas (em construção)"
+// Active campaigns: each campaign is a dedicated ClickUp list
+const ACTIVE_CAMPAIGNS = () => [
+  process.env.CLICKUP_AUMENTO_PRECOS_LIST && {
+    id:         process.env.CLICKUP_AUMENTO_PRECOS_LIST,
+    name:       'Aumento de Preço 2026',
+    status:     'Em andamento',
+    start_date: null,
+    due_date:   null,
+  },
+].filter(Boolean)
 
 async function getGraph(listId, force = false) {
   const key = `graph:${listId}`
@@ -32,43 +40,18 @@ async function getAlerts(listId, force = false) {
   return alertas
 }
 
-// GET /api/campaigns
-// Returns campaign tasks from the "Campanhas (em construção)" list
+// GET /api/campaigns — returns configured active campaigns (each campaign = one ClickUp list)
 router.get('/', async (req, res) => {
-  try {
-    const tasks = await clickup.getCampaignTasks(CAMPAIGN_LIST())
-    res.json(tasks
-      .filter(t => !t.name.toUpperCase().startsWith('TEMPLATE'))
-      .map(t => ({
-        id: t.id,
-        name: t.name,
-        status: t.status?.status,
-        url: t.url,
-        start_date: t.start_date,
-        due_date: t.due_date,
-      })))
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
+  res.json(ACTIVE_CAMPAIGNS())
 })
 
-// POST /api/campaigns — create a new campaign task in ClickUp
-router.post('/', async (req, res) => {
-  try {
-    const { name, start_date, due_date } = req.body
-    if (!name?.trim()) return res.status(400).json({ error: 'Nome obrigatório' })
-    const task = await clickup.createCampaignTask(CAMPAIGN_LIST(), { name: name.trim(), start_date, due_date })
-    cache.del('campaigns')
-    res.status(201).json({ id: task.id, name: task.name, status: task.status?.status, url: task.url, start_date: task.start_date, due_date: task.due_date })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
 
-// GET /api/campaigns/:id/subtasks — subtasks with RACI for a campaign task
+// GET /api/campaigns/:id/subtasks — tasks with RACI for a campaign (id = ClickUp list ID)
 router.get('/:id/subtasks', async (req, res) => {
   try {
-    const subtasks = await clickup.getSubtasks(req.params.id, CAMPAIGN_LIST())
+    const allTasks = await clickup.getTasks(req.params.id, { include_closed: true })
+    // Return only leaf-level subtasks (tasks that have a parent)
+    const subtasks = allTasks.filter(t => t.parent)
     const { FIELD_IDS, getFieldValue, getPeopleField, getPeopleArrayField } = await import('../fieldMap.js')
     res.json(subtasks.map(t => ({
       id: t.id,
@@ -78,7 +61,7 @@ router.get('/:id/subtasks', async (req, res) => {
       due_date: t.due_date,
       start_date: t.start_date,
       url: t.url,
-      responsavel: getPeopleField(t, FIELD_IDS.responsavel),
+      responsavel: getPeopleField(t, FIELD_IDS.responsavel) || t.assignees?.[0]?.username || null,
       aprovador: getPeopleField(t, FIELD_IDS.aprovador),
       consultar: getFieldValue(t, FIELD_IDS.consultar),
       informar: getPeopleArrayField(t, FIELD_IDS.informar),

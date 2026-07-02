@@ -1,16 +1,15 @@
-// Field IDs discovered from GET /list/901326968297/field
-// These fields are shared across all campaign lists via the space
+// Field IDs for campaign lists (each campaign is its own ClickUp list)
 export const FIELD_IDS = {
-  responsavel:    'dcedabca-3297-4377-a51d-80834bf35915',
-  aprovador:      'cc018eb3-438d-4d8e-aa66-8303b971944f',
-  consultar:      '7b0de8eb-1894-4438-add4-83ed6e913b3f',
-  informar:       '7c45aaaa-8612-40ee-82a7-f0a0f6e6d5ba',
-  etapaLimitante: '6e55a453-d34d-4969-b1fa-a93ad43ad20f',
-  leadTime:       '2d1d0721-f728-4349-93c5-8d1017576b87',
-  bloqueiaQual:   '7cc3bec2-d960-4356-a562-46ecab8528c7',
-  faseCampanha:   '6faac387-7019-443b-b1cd-a488249f19dd',
-  canal:          'a51ae68a-e312-47e4-91d0-6b01befee407',
-  dataLancamento: '0ec39ed7-5e38-4bfc-8b80-d5a5b10d7143',
+  responsavel:    '03d6adf0-5cc4-4c7f-9268-2d0d232fc615',  // (Campanhas) - Responsável
+  aprovador:      'be6f30d7-dcbf-412b-b4ba-8f294b9ddd19',  // Aprovador
+  consultar:      '7b0de8eb-1894-4438-add4-83ed6e913b3f',  // not in new lists — returns null
+  informar:       '7c45aaaa-8612-40ee-82a7-f0a0f6e6d5ba',  // Informar
+  etapaLimitante: 'b967fc1f-b74f-4fe8-9ebc-c9ea88d992a0',  // Etapa Limitante (dropdown Sim/Não)
+  leadTime:       '2d1d0721-f728-4349-93c5-8d1017576b87',  // not in new lists — returns null
+  bloqueiaQual:   '7cc3bec2-d960-4356-a562-46ecab8528c7',  // not in new lists — returns null
+  faseCampanha:   'b16eadf9-ee56-4761-8ed1-929b1f28235a',  // Fase (dropdown)
+  canal:          'a51ae68a-e312-47e4-91d0-6b01befee407',  // not in new lists — returns null
+  dataLancamento: '0ec39ed7-5e38-4bfc-8b80-d5a5b10d7143',  // not in new lists — returns null
 }
 
 export function getFieldValue(task, fieldId) {
