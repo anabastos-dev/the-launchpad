@@ -1,24 +1,27 @@
 import { Router } from 'express'
 import { authMiddleware } from '../auth.js'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
 
 const router = Router()
 
-// Persist to a JSON file next to this route file
-const __dir = dirname(fileURLToPath(import.meta.url))
-const STORE_PATH = join(__dir, '..', 'events_store.json')
+// Use /tmp (writable on Vercel serverless) with in-memory fallback
+const STORE_PATH = '/tmp/launchpad_events.json'
+let memoryStore = []
 
 function readEvents() {
+  if (memoryStore.length > 0) return memoryStore
   try {
-    if (existsSync(STORE_PATH)) return JSON.parse(readFileSync(STORE_PATH, 'utf8'))
+    if (existsSync(STORE_PATH)) {
+      memoryStore = JSON.parse(readFileSync(STORE_PATH, 'utf8'))
+      return memoryStore
+    }
   } catch {}
   return []
 }
 
 function writeEvents(events) {
-  writeFileSync(STORE_PATH, JSON.stringify(events), 'utf8')
+  memoryStore = events
+  try { writeFileSync(STORE_PATH, JSON.stringify(events), 'utf8') } catch {}
 }
 
 // Public — anyone can read
