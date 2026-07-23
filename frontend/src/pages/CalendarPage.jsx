@@ -350,7 +350,15 @@ export default function CalendarPage() {
 
   useEffect(() => {
     api.getCampaigns().then(setMissions).catch(() => {})
-    api.getEvents().then(evs => { setEvents(evs); cacheLocal(evs) }).catch(() => {})
+    api.getEvents().then(evs => {
+      if (evs.length > 0) {
+        setEvents(evs); cacheLocal(evs)
+      } else {
+        // Backend vazio — sobe o que está no localStorage (migração inicial)
+        const local = loadEventsLocal()
+        if (local.length > 0) api.saveEvents(local).catch(() => {})
+      }
+    }).catch(() => {})
   }, [])
 
   function handleDayClick(year, month, day) {
