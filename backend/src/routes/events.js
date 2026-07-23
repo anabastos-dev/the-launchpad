@@ -12,7 +12,10 @@ async function redisGet() {
     headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` },
   })
   const { result } = await res.json()
-  return result ? JSON.parse(result) : []
+  if (!result) return []
+  const parsed = JSON.parse(result)
+  // handle legacy double-encoded values
+  return typeof parsed === 'string' ? JSON.parse(parsed) : parsed
 }
 
 async function redisSet(events) {
@@ -20,7 +23,7 @@ async function redisSet(events) {
   await fetch(`${UPSTASH_URL}/set/${KEY}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(JSON.stringify(events)),
+    body: JSON.stringify(events),
   })
 }
 
