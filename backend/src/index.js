@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js'
 import campaignRoutes from './routes/campaigns.js'
 import taskRoutes from './routes/tasks.js'
 import webhookRoutes from './routes/webhooks.js'
+import eventsRoutes from './routes/events.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -20,6 +21,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/campaigns', campaignRoutes)
 app.use('/api/tasks', taskRoutes)
 app.use('/api/webhooks', webhookRoutes)
+app.use('/api/events', eventsRoutes)
 
 app.get('/api/healthcheck', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }))
 

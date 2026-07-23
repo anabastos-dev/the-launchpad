@@ -26,10 +26,10 @@ const PALETTE = [
 
 const EVENTS_KEY = 'launchpad_calendar_events'
 
-function loadEvents() {
+function loadEventsLocal() {
   try { return JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]') } catch { return [] }
 }
-function saveEvents(evs) {
+function cacheLocal(evs) {
   localStorage.setItem(EVENTS_KEY, JSON.stringify(evs))
 }
 
@@ -80,10 +80,10 @@ function MonthGrid({ year, month, label, events, onEventClick, onDayClick }) {
 
   return (
     <div>
-      <p style={{ fontSize: 11, fontWeight: 700, color: '#18181B', letterSpacing: '0.04em', textTransform: 'uppercase', margin: '0 0 12px' }}>{label}</p>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 12px' }}>{label}</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4, gap: 3 }}>
         {DAYS_OF_WEEK.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.06em', padding: '4px 0' }}>{d}</div>
+          <div key={d} style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em', padding: '4px 0' }}>{d}</div>
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
@@ -99,14 +99,15 @@ function MonthGrid({ year, month, label, events, onEventClick, onDayClick }) {
               onClick={() => onDayClick(year, month, day)}
               style={{
                 minHeight: 72, borderRadius: 8,
-                border: todayDay ? '1.5px solid #E8472A' : '1px solid #E4E4E7',
-                background: todayDay ? '#FFF5F3' : weekend ? '#FAFAFA' : '#FFFFFF',
+                border: todayDay ? '1.5px solid #E8472A' : '1px solid rgba(255,255,255,0.07)',
+                background: todayDay ? 'rgba(232,71,42,0.1)' : weekend ? '#141416' : '#18181B',
                 padding: '6px 7px', position: 'relative', overflow: 'hidden',
                 cursor: 'pointer',
+                transition: 'border-color 0.1s',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 11, fontWeight: todayDay ? 800 : 500, color: todayDay ? '#E8472A' : weekend ? '#A1A1AA' : '#52525B', lineHeight: 1 }}>
+                <span style={{ fontSize: 11, fontWeight: todayDay ? 800 : 500, color: todayDay ? '#E8472A' : weekend ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.55)', lineHeight: 1 }}>
                   {day}
                 </span>
                 {copa && <span style={{ fontSize: 10, lineHeight: 1 }}>⚽</span>}
@@ -146,6 +147,9 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
   const [dueStr,    setDueStr]    = useState(event?.due_date   ? msToDateStr(event.due_date)   : (event?._prefillDate || ''))
   const [color,     setColor]     = useState(event?.color || '')
   const [missionId, setMissionId] = useState(event?.missionId || '')
+  const [premissa,  setPremissa]  = useState(event?.premissa || '')
+  const [listLink,  setListLink]  = useState(event?.listLink || '')
+  const [status,    setStatus]    = useState(event?.status || '')
   const [error,     setError]     = useState(null)
 
   function handleSave() {
@@ -154,10 +158,13 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
       id:        event?.id || uid(),
       name:      name.trim(),
       type,
+      status:    status || null,
       start_date: dateStrToMs(startStr),
       due_date:   dateStrToMs(dueStr) || dateStrToMs(startStr),
       color:     color || null,
       missionId: missionId || null,
+      premissa:  premissa.trim() || null,
+      listLink:  listLink.trim() || null,
     })
   }
 
@@ -196,6 +203,31 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
             />
           </label>
 
+          {/* Status */}
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={labelStyle}>Status</span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {['Não iniciado', 'Em planejamento', 'Em execução', 'Finalizado', 'Cancelado'].map(s => (
+                <button
+                  key={s} onClick={() => setStatus(status === s ? '' : s)}
+                  style={{
+                    padding: '5px 12px', borderRadius: 99, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: 'none',
+                    background: status === s
+                      ? s === 'Em execução' ? '#0EA5E9'
+                        : s === 'Em planejamento' ? '#FBBF24'
+                        : s === 'Finalizado' ? '#22C55E'
+                        : s === 'Cancelado' ? '#EF4444'
+                        : '#A1A1AA'
+                      : '#F4F4F5',
+                    color: status === s ? '#fff' : '#52525B',
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </label>
+
           {/* Type */}
           <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             <span style={labelStyle}>Tipo</span>
@@ -226,6 +258,29 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
               <input type="date" value={dueStr} onChange={e => setDueStr(e.target.value)} style={inputStyle} />
             </label>
           </div>
+
+          {/* Premissa */}
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={labelStyle}>Premissa</span>
+            <textarea
+              value={premissa}
+              onChange={e => setPremissa(e.target.value)}
+              placeholder="Descreva o objetivo e contexto desta ação…"
+              rows={3}
+              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
+            />
+          </label>
+
+          {/* Link da lista */}
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={labelStyle}>Link da lista (ClickUp)</span>
+            <input
+              value={listLink}
+              onChange={e => setListLink(e.target.value)}
+              placeholder="https://app.clickup.com/..."
+              style={inputStyle}
+            />
+          </label>
 
           {/* Mission link */}
           {missions.length > 0 && (
@@ -289,12 +344,13 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
 }
 
 export default function CalendarPage() {
-  const [events,   setEvents]   = useState(loadEvents)
+  const [events,   setEvents]   = useState(loadEventsLocal)
   const [missions, setMissions] = useState([])
   const [modal,    setModal]    = useState(null) // { event } or { _prefillDate }
 
   useEffect(() => {
     api.getCampaigns().then(setMissions).catch(() => {})
+    api.getEvents().then(evs => { setEvents(evs); cacheLocal(evs) }).catch(() => {})
   }, [])
 
   function handleDayClick(year, month, day) {
@@ -306,7 +362,8 @@ export default function CalendarPage() {
     setEvents(prev => {
       const exists = prev.find(e => e.id === ev.id)
       const next = exists ? prev.map(e => e.id === ev.id ? ev : e) : [...prev, ev]
-      saveEvents(next)
+      cacheLocal(next)
+      api.saveEvents(next).catch(() => {})
       return next
     })
     setModal(null)
@@ -315,7 +372,8 @@ export default function CalendarPage() {
   function handleDelete(id) {
     setEvents(prev => {
       const next = prev.filter(e => e.id !== id)
-      saveEvents(next)
+      cacheLocal(next)
+      api.saveEvents(next).catch(() => {})
       return next
     })
     setModal(null)
@@ -328,9 +386,9 @@ export default function CalendarPage() {
     <div style={{ padding: '40px 44px 64px', maxWidth: 1100 }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
-          <p style={{ fontSize: 11, color: '#A1A1AA', margin: '0 0 6px', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>Mission Control</p>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.04em', color: '#18181B', margin: '0 0 6px', lineHeight: 1 }}>Calendário Editorial</h1>
-          <p style={{ fontSize: 12, color: '#A1A1AA', margin: 0 }}>
+          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
+          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.04em', color: '#F4F4F5', margin: '0 0 6px', lineHeight: 1 }}>Calendário Editorial</h1>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: 0 }}>
             {events.length} evento{events.length !== 1 ? 's' : ''} · clique em um dia para adicionar
           </p>
         </div>
@@ -351,12 +409,12 @@ export default function CalendarPage() {
           {EVENT_TYPES.map(t => (
             <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{ width: 10, height: 10, background: TYPE_COLORS[t], borderRadius: 2 }} />
-              <span style={{ fontSize: 10, color: '#A1A1AA', fontWeight: 500 }}>{t}</span>
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>{t}</span>
             </div>
           ))}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{ fontSize: 10 }}>⚽</span>
-            <span style={{ fontSize: 10, color: '#A1A1AA', fontWeight: 500 }}>Copa do Brasil</span>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>Copa do Brasil</span>
           </div>
         </div>
       </div>
