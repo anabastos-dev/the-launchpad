@@ -347,19 +347,25 @@ export default function CalendarPage() {
   const [events,   setEvents]   = useState(loadEventsLocal)
   const [missions, setMissions] = useState([])
   const [modal,    setModal]    = useState(null) // { event } or { _prefillDate }
+  const [syncMsg,  setSyncMsg]  = useState(null)
 
   useEffect(() => {
     api.getCampaigns().then(setMissions).catch(() => {})
     api.getEvents().then(evs => {
-      if (evs.length > 0) {
-        setEvents(evs); cacheLocal(evs)
-      } else {
-        // Backend vazio — sobe o que está no localStorage (migração inicial)
-        const local = loadEventsLocal()
-        if (local.length > 0) api.saveEvents(local).catch(() => {})
-      }
+      if (evs.length > 0) { setEvents(evs); cacheLocal(evs) }
     }).catch(() => {})
   }, [])
+
+  async function handleSync() {
+    setSyncMsg('Publicando...')
+    try {
+      await api.saveEvents(events)
+      setSyncMsg('✓ Publicado!')
+    } catch {
+      setSyncMsg('Erro — faça login novamente')
+    }
+    setTimeout(() => setSyncMsg(null), 3000)
+  }
 
   function handleDayClick(year, month, day) {
     const str = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`
@@ -400,12 +406,18 @@ export default function CalendarPage() {
             {events.length} evento{events.length !== 1 ? 's' : ''} · clique em um dia para adicionar
           </p>
         </div>
-        <button
-          onClick={() => setModal({})}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#E8472A', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={handleSync}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#A1A1AA', cursor: 'pointer' }}
+          >{syncMsg || '↑ Publicar'}</button>
+          <button
+            onClick={() => setModal({})}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#E8472A', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
+          >
           + Novo evento
-        </button>
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
