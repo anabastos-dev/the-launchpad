@@ -1,40 +1,49 @@
 import { Router } from 'express'
 import { authMiddleware } from '../auth.js'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
 
 const router = Router()
 
-// Use /tmp (writable on Vercel serverless) with in-memory fallback
-const STORE_PATH = '/tmp/launchpad_events.json'
-let memoryStore = []
+const UPSTASH_URL   = process.env.UPSTASH_REDIS_REST_URL
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
+const KEY = 'launchpad_calendar_events'
 
-function readEvents() {
-  if (memoryStore.length > 0) return memoryStore
-  try {
-    if (existsSync(STORE_PATH)) {
-      memoryStore = JSON.parse(readFileSync(STORE_PATH, 'utf8'))
-      return memoryStore
-    }
-  } catch {}
-  return []
+async function redisGet() {
+  if (!UPSTASH_URL) return []
+  const res = await fetch(`${UPSTASH_URL}/get/${KEY}`, {
+    headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` },
+  })
+  const { result } = await res.json()
+  return result ? JSON.parse(result) : []
 }
 
-function writeEvents(events) {
-  memoryStore = events
-  try { writeFileSync(STORE_PATH, JSON.stringify(events), 'utf8') } catch {}
+async function redisSet(events) {
+  if (!UPSTASH_URL) return
+  await fetch(`${UPSTASH_URL}/set/${KEY}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(JSON.stringify(events)),
+  })
 }
 
 // Public — anyone can read
-router.get('/', (req, res) => {
-  res.json(readEvents())
+router.get('/', async (req, res) => {
+  try {
+    res.json(await redisGet())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
 })
 
 // Protected — only logged-in user (Ana) can write
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   const events = req.body
   if (!Array.isArray(events)) return res.status(400).json({ error: 'Payload deve ser um array' })
-  writeEvents(events)
-  res.json({ ok: true, count: events.length })
+  try {
+    await redisSet(events)
+    res.json({ ok: true, count: events.length })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
 })
 
 export default router
