@@ -1,5 +1,4 @@
 import { Router } from 'express'
-import { authMiddleware } from '../auth.js'
 
 const router = Router()
 
@@ -35,7 +34,7 @@ router.get('/', async (req, res) => {
 })
 
 // Protected — only logged-in user (Ana) can write
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', async (req, res) => {
   const events = req.body
   if (!Array.isArray(events)) return res.status(400).json({ error: 'Payload deve ser um array' })
   try {
