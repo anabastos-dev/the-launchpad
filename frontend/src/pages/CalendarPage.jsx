@@ -421,8 +421,16 @@ export default function CalendarPage() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-        <MonthGrid year={year} month={7}  label="Julho 2026"  events={events} onEventClick={ev => setModal({ ...ev })} onDayClick={handleDayClick} />
-        <MonthGrid year={year} month={8}  label="Agosto 2026" events={events} onEventClick={ev => setModal({ ...ev })} onDayClick={handleDayClick} />
+        {[
+          [7,  'Julho'],
+          [8,  'Agosto'],
+          [9,  'Setembro'],
+          [10, 'Outubro'],
+          [11, 'Novembro'],
+          [12, 'Dezembro'],
+        ].map(([m, label]) => (
+          <MonthGrid key={m} year={year} month={m} label={`${label} ${year}`} events={events} onEventClick={ev => setModal({ ...ev })} onDayClick={handleDayClick} />
+        ))}
 
         {/* Legend */}
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
