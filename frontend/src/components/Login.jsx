@@ -1,24 +1,23 @@
 import { useState } from 'react'
+import { api } from '../api.js'
 
 export default function Login({ onLogin }) {
-  const [user, setUser] = useState('ana')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setLoading(true)
-    setTimeout(() => {
-      if (password.length === 0) {
-        setError('Por favor, insira uma senha.')
-        setLoading(false)
-        return
-      }
-      onLogin('demo_token_' + user)
+    try {
+      const { token } = await api.login('ana', password)
+      onLogin(token)
+    } catch {
+      setError('Código de acesso inválido.')
+    } finally {
       setLoading(false)
-    }, 500)
+    }
   }
 
   return (
@@ -81,13 +80,6 @@ export default function Login({ onLogin }) {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#3F3F46', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 7 }}>Operador</label>
-              <select value={user} onChange={e => setUser(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 13, color: '#FAFAFA', background: 'rgba(255,255,255,0.04)', outline: 'none', boxSizing: 'border-box' }}>
-                <option style={{ background: '#18181B' }} value="ana">Ana Bastos</option>
-                <option style={{ background: '#18181B' }} value="joao">João</option>
-              </select>
-            </div>
             <div style={{ marginBottom: 22 }}>
               <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#3F3F46', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 7 }}>Código de acesso</label>
               <input
@@ -112,7 +104,6 @@ export default function Login({ onLogin }) {
               {loading ? 'Autenticando...' : 'Launch →'}
             </button>
           </form>
-          <p style={{ fontSize: 11, color: '#27272A', textAlign: 'center', margin: '20px 0 0' }}>Demo: qualquer senha funciona</p>
         </div>
       </div>
     </div>
