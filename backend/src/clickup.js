@@ -107,6 +107,26 @@ export async function getListDetails(listId) {
   return data
 }
 
+export async function createTask(listId, { name, assignees = [], start_date, due_date, parent } = {}) {
+  const body = { name }
+  if (assignees.length) body.assignees = assignees
+  if (start_date) body.start_date = start_date
+  if (due_date) body.due_date = due_date
+  if (parent) body.parent = parent
+  const { data } = await axios.post(`${BASE}/list/${listId}/task`, body, { headers: headers() })
+  return data
+}
+
+export async function getWorkspaceMembers(teamId) {
+  try {
+    const { data } = await axios.get(`${BASE}/team`, { headers: headers() })
+    const team = (data.teams || []).find(t => String(t.id) === String(teamId)) || data.teams?.[0]
+    return team?.members || []
+  } catch {
+    return []
+  }
+}
+
 // Get all tasks in a list that are top-level campaign tasks (no parent)
 export async function getCampaignTasks(listId) {
   const { data } = await axios.get(`${BASE}/list/${listId}/task`, {
@@ -117,6 +137,16 @@ export async function getCampaignTasks(listId) {
 }
 
 // Get subtasks of a campaign task (the actual execution tasks with RACI)
+export async function deleteTask(taskId) {
+  const { data } = await axios.delete(`${BASE}/task/${taskId}`, { headers: headers() })
+  return data
+}
+
+export async function createList(folderId, name) {
+  const { data } = await axios.post(`${BASE}/folder/${folderId}/list`, { name }, { headers: headers() })
+  return data
+}
+
 export async function getSubtasks(parentTaskId, listId) {
   const allTasks = []
   let page = 0

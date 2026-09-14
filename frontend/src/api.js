@@ -21,8 +21,8 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  login: (user, password) =>
-    request('/auth/login', { method: 'POST', body: JSON.stringify({ user, password }) }),
+  login: (email, code) =>
+    request('/auth/login', { method: 'POST', body: JSON.stringify({ email, code }) }),
   getCampaigns: () => request('/campaigns'),
   createCampaign: ({ name, start_date, due_date }) =>
     request('/campaigns', { method: 'POST', body: JSON.stringify({ name, start_date, due_date }) }),
@@ -37,6 +37,10 @@ export const api = {
   getEvents: () => request('/events'),
   saveEvents: (events) => request('/events', { method: 'POST', body: JSON.stringify(events) }),
   getOfertas: (id) => request(`/campaigns/${id}/ofertas`),
+  finalizeCampaign: (id) =>
+    request(`/campaigns/${id}/finalize`, { method: 'POST' }),
+  unfinalizeCampaign: (id) =>
+    request(`/campaigns/${id}/finalize`, { method: 'DELETE' }),
   refresh: (id) => request(`/campaigns/${id}/refresh`, { method: 'POST' }),
   updateStatus: (taskId, status) =>
     request(`/tasks/${taskId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),

@@ -3,19 +3,69 @@ import * as clickup from '../clickup.js'
 import { buildDependencyGraph, propagateCascade, getRealStatus, computeRisk } from '../bottleneck.js'
 import * as cache from '../cache.js'
 import { FIELD_IDS, getFieldValue } from '../fieldMap.js'
+import { getFinalized, finalize, unfinalize } from '../finalized.js'
 
 const router = Router()
 
 // Active campaigns: each campaign is a dedicated ClickUp list
 const ACTIVE_CAMPAIGNS = () => [
-  process.env.CLICKUP_AUMENTO_PRECOS_LIST && {
-    id:         process.env.CLICKUP_AUMENTO_PRECOS_LIST,
+  {
+    id:         process.env.CLICKUP_AUMENTO_PRECOS_LIST || '901327733805',
     name:       'Aumento de Preço 2026',
-    status:     'Em andamento',
+    status:     'Em execução',
+    start_date: '2026-07-21',
+    due_date:   '2026-07-31',
+  },
+  {
+    id:         process.env.CLICKUP_DIA_DOS_PAIS_LIST || '901327953612',
+    name:       'Dia dos Pais 2026',
+    status:     'Em planejamento',
+    start_date: '2026-08-03',
+    due_date:   '2026-08-05',
+  },
+  {
+    id:         '901327962953',
+    name:       'Padronização de Kits',
+    status:     'Em planejamento',
     start_date: null,
     due_date:   null,
   },
-].filter(Boolean)
+  {
+    id:         '901327962985',
+    name:       'Campanha Cueca Minimal',
+    status:     'Não iniciado',
+    start_date: null,
+    due_date:   null,
+  },
+  {
+    id:         '901327962965',
+    name:       'Outlet Inverno',
+    status:     'Não iniciado',
+    start_date: null,
+    due_date:   null,
+  },
+  {
+    id:         '901327962968',
+    name:       'Lançamento Camiseta 2.0',
+    status:     'Não iniciado',
+    start_date: null,
+    due_date:   null,
+  },
+  {
+    id:         '901327962983',
+    name:       'Lançamento Tênis Nobuck e Nylon',
+    status:     'Não iniciado',
+    start_date: null,
+    due_date:   null,
+  },
+  {
+    id:         '901327962979',
+    name:       'Lançamento Conjunto Tech Classics',
+    status:     'Não iniciado',
+    start_date: null,
+    due_date:   null,
+  },
+]
 
 async function getGraph(listId, force = false) {
   const key = `graph:${listId}`
@@ -42,7 +92,20 @@ async function getAlerts(listId, force = false) {
 
 // GET /api/campaigns — returns configured active campaigns (each campaign = one ClickUp list)
 router.get('/', async (req, res) => {
-  res.json(ACTIVE_CAMPAIGNS())
+  const finalized = getFinalized()
+  res.json(ACTIVE_CAMPAIGNS().map(c => ({ ...c, finalized: finalized.includes(c.id) })))
+})
+
+// POST /api/campaigns/:id/finalize — mark campaign as finalized
+router.post('/:id/finalize', (req, res) => {
+  finalize(req.params.id)
+  res.json({ ok: true })
+})
+
+// DELETE /api/campaigns/:id/finalize — unmark campaign as finalized
+router.delete('/:id/finalize', (req, res) => {
+  unfinalize(req.params.id)
+  res.json({ ok: true })
 })
 
 

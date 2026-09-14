@@ -2,17 +2,18 @@ import { useState } from 'react'
 import { api } from '../api.js'
 
 export default function Login({ onLogin }) {
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail]       = useState('')
+  const [code, setCode]         = useState('')
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const { token } = await api.login('ana', password)
-      onLogin(token)
+      const { token, name } = await api.login(email.trim().toLowerCase(), code)
+      onLogin(token, name)
     } catch {
       setError('Código de acesso inválido.')
     } finally {
@@ -22,9 +23,8 @@ export default function Login({ onLogin }) {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: '#0A0A0C' }}>
-      {/* Left panel — branding */}
+      {/* Left panel */}
       <div style={{ width: '42%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '48px 52px', borderRight: '1px solid rgba(255,255,255,0.06)', position: 'relative', overflow: 'hidden' }}>
-        {/* Grid overlay */}
         <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} aria-hidden>
           <defs>
             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -32,11 +32,8 @@ export default function Login({ onLogin }) {
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
-          {/* Accent line */}
           <line x1="0" y1="100%" x2="100%" y2="0" stroke="rgba(232,71,42,0.07)" strokeWidth="1" />
         </svg>
-
-        {/* Logo */}
         <div style={{ position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 48 }}>
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -45,7 +42,6 @@ export default function Login({ onLogin }) {
             </svg>
             <span style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 15, letterSpacing: '-0.02em' }}>The Launchpad</span>
           </div>
-
           <h1 style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-0.04em', color: '#FFFFFF', margin: '0 0 16px', lineHeight: 1.1 }}>
             Campaign ops,<br />
             <span style={{ color: '#E8472A' }}>mission-ready.</span>
@@ -54,8 +50,6 @@ export default function Login({ onLogin }) {
             where campaigns are tracked,<br />risks are flagged, and execution happens
           </p>
         </div>
-
-        {/* Bottom stats */}
         <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
           {[
             { label: 'Active missions', value: '4' },
@@ -71,21 +65,31 @@ export default function Login({ onLogin }) {
         </div>
       </div>
 
-      {/* Right panel — form */}
+      {/* Right panel */}
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px' }}>
         <div style={{ width: '100%', maxWidth: 340 }}>
           <div style={{ marginBottom: 32 }}>
             <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.03em', color: '#FFFFFF', margin: '0 0 6px' }}>Access mission control</h2>
             <p style={{ color: '#52525B', fontSize: 13, margin: 0 }}>Internal use only — Minimal Club</p>
           </div>
-
           <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#3F3F46', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 7 }}>Seu email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="pedro.nasser@minimalclub.com.br"
+                required
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 13, color: '#FAFAFA', background: 'rgba(255,255,255,0.04)', outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
             <div style={{ marginBottom: 22 }}>
               <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#3F3F46', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 7 }}>Código de acesso</label>
               <input
                 type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
+                value={code}
+                onChange={e => setCode(e.target.value)}
                 placeholder="••••••••"
                 required
                 style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', fontSize: 13, color: '#FAFAFA', background: 'rgba(255,255,255,0.04)', outline: 'none', boxSizing: 'border-box' }}

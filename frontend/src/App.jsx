@@ -7,16 +7,23 @@ import CampaignPage from './pages/CampaignPage.jsx'
 import AlertsPage from './pages/AlertsPage.jsx'
 import CalendarPage from './pages/CalendarPage.jsx'
 import MktPage from './pages/MktPage.jsx'
-function AppShell({ onLogout }) {
+import AgentPage from './pages/AgentPage.jsx'
+
+function decodeToken(token) {
+  try { return JSON.parse(atob(token.split('.')[1])) } catch { return {} }
+}
+
+function AppShell({ onLogout, userName }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar onLogout={onLogout} userName="Ana Bastos" alertCount={0} />
+      <Sidebar onLogout={onLogout} userName={userName} alertCount={0} />
       <main style={{ flex: 1, background: '#0F0F11', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div style={{ flex: 1 }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/alerts" element={<AlertsPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/agent" element={<AgentPage />} />
             <Route path="/campaigns/:id" element={<CampaignPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -33,15 +40,25 @@ function AppShell({ onLogout }) {
 
 export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem('minimal_token'))
-  function handleLogin(tk) { localStorage.setItem('minimal_token', tk); setToken(tk) }
-  function handleLogout() { localStorage.removeItem('minimal_token'); setToken(null) }
+
+  function handleLogin(tk) {
+    localStorage.setItem('minimal_token', tk)
+    setToken(tk)
+  }
+  function handleLogout() {
+    localStorage.removeItem('minimal_token')
+    setToken(null)
+  }
+
+  const userName = token ? (decodeToken(token).name || 'Usuário') : ''
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/mkt" element={<MktPage />} />
         <Route path="/*" element={
           token
-            ? <AppShell onLogout={handleLogout} />
+            ? <AppShell onLogout={handleLogout} userName={userName} />
             : <Login onLogin={handleLogin} />
         } />
       </Routes>

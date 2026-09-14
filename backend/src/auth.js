@@ -1,18 +1,18 @@
 import jwt from 'jsonwebtoken'
 
-const USERS = {
-  ana:  { name: 'Ana Bastos', password: process.env.AUTH_PASS_ANA },
-  joao: { name: 'João',       password: process.env.AUTH_PASS_JOAO },
+function nameFromEmail(email) {
+  const local = (email || '').split('@')[0]
+  return local.split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
-export function validateLogin(user, password) {
-  const u = USERS[user]
-  if (!u || !u.password) return false
-  return password === u.password
+export function validateLogin(email, code) {
+  if (!email || !code) return false
+  return code === process.env.ACCESS_CODE
 }
 
-export function generateToken(user) {
-  return jwt.sign({ user, name: USERS[user]?.name }, process.env.JWT_SECRET, { expiresIn: '8h' })
+export function generateToken(email) {
+  const name = nameFromEmail(email)
+  return jwt.sign({ email, name }, process.env.JWT_SECRET, { expiresIn: '30d' })
 }
 
 export function authMiddleware(req, res, next) {

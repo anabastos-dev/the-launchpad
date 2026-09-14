@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://backend-ten-chi-jleyncxvf6.vercel.app/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
