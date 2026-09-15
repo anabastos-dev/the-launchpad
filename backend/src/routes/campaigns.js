@@ -65,6 +65,48 @@ const ACTIVE_CAMPAIGNS = () => [
     start_date: null,
     due_date:   null,
   },
+  {
+    id:         '901328715630',
+    name:       'Lucro Zero — Camiseta Vinho',
+    status:     'Finalizado',
+    start_date: '2026-09-08',
+    due_date:   '2026-09-10',
+  },
+  {
+    id:         '901328715327',
+    name:       'Lançamento Jeans Comfort',
+    status:     'Em execução',
+    start_date: '2026-09-15',
+    due_date:   '2026-09-20',
+  },
+  {
+    id:         '901328715329',
+    name:       'Lançamento Polo Pima',
+    status:     'Em planejamento',
+    start_date: '2026-09-22',
+    due_date:   '2026-09-27',
+  },
+  {
+    id:         '901328715338',
+    name:       'Lucro Zero Jeans 1.0',
+    status:     'Em planejamento',
+    start_date: '2026-09-28',
+    due_date:   '2026-09-30',
+  },
+  {
+    id:         '901328164028',
+    name:       'Linha Verão 26/27',
+    status:     'Em planejamento',
+    start_date: '2026-09-28',
+    due_date:   '2026-10-30',
+  },
+  {
+    id:         '901328136424',
+    name:       'Black Friday 2026',
+    status:     'Em planejamento',
+    start_date: '2026-11-01',
+    due_date:   '2026-11-30',
+  },
 ]
 
 async function getGraph(listId, force = false) {
