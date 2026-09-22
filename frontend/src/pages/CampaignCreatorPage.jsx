@@ -306,19 +306,24 @@ export default function CampaignCreatorPage() {
     setMessages(newMessages)
     setInput('')
     setLoading(true)
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 55000) // backend allows up to 60s
     try {
       const res = await fetch('/api/agent/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('minimal_token')}` },
         body: JSON.stringify({ messages: newMessages, currentTaskList: taskList }),
+        signal: controller.signal,
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setMessages(prev => [...prev, { role: 'assistant', content: data.message }])
       if (data.taskList) { setTaskList(data.taskList); setUploadResult(null) }
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `Erro: ${err.message}` }])
+      const msg = err.name === 'AbortError' ? 'Demorou demais e eu cancelei — tenta de novo, ou manda um briefing mais curto.' : `Erro: ${err.message}`
+      setMessages(prev => [...prev, { role: 'assistant', content: msg }])
     } finally {
+      clearTimeout(timeout)
       setLoading(false)
       inputRef.current?.focus()
     }
@@ -380,12 +385,13 @@ export default function CampaignCreatorPage() {
           {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
           {loading && (
             <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
-              <div style={{ background: theme.bgSubtle, borderRadius: '4px 14px 14px 14px', padding: '12px 16px' }}>
+              <div style={{ background: theme.bgSubtle, borderRadius: '4px 14px 14px 14px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: theme.accent, animation: `bounce 1s ${i * 0.15}s infinite` }} />
                   ))}
                 </div>
+                <span style={{ fontSize: 11.5, color: theme.textFaint }}>ajustando o playbook — pode levar até 30s</span>
               </div>
             </div>
           )}
