@@ -46,6 +46,52 @@ function buildDescription(ev) {
   return parts.join('\n\n')
 }
 
+// TEMP debug — dumps the cardmap so we can see which events actually got a
+// ClickUp card. Remove once notifications are confirmed working.
+router.get('/debug-cardmap', async (req, res) => {
+  try {
+    res.json(await redisGet(CARDMAP_KEY, {}))
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// TEMP debug — comments + watchers on one notify-list task, to check whether
+// the sync's comment/watcher calls actually land in ClickUp.
+router.get('/debug-task/:taskId', async (req, res) => {
+  try {
+    const [comments, task] = await Promise.all([
+      clickup.getComments(req.params.taskId),
+      clickup.getTask ? clickup.getTask(req.params.taskId).catch(() => null) : null,
+    ])
+    res.json({
+      comments: comments.map(c => ({ text: c.comment_text, date: c.date, user: c.user?.username })),
+      watchers: task?.watchers?.map(w => w.username) || null,
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message, data: e.response?.data })
+  }
+})
+
+// TEMP debug — reports the resolved notify-list id (not secret) and whether
+// the ClickUp token can actually see it. Remove once notifications are confirmed working.
+router.get('/debug-notify-list', async (req, res) => {
+  const info = { NOTIFY_LIST_ID, env_set: !!process.env.CLICKUP_CALENDAR_LIST_ID }
+  try {
+    const list = await clickup.getListDetails(NOTIFY_LIST_ID)
+    info.list_ok = true
+    info.list_name = list.name
+    info.list_folder = list.folder?.name
+    info.list_space = list.space?.name
+  } catch (e) {
+    info.list_ok = false
+    info.list_error = e.message
+    info.list_status = e.response?.status
+    info.list_data = e.response?.data
+  }
+  res.json(info)
+})
+
 // -------- Subscribers --------
 
 router.get('/subscribers', async (req, res) => {

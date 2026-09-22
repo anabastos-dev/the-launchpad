@@ -34,4 +34,8 @@ app.get('/api/healthcheck', (req, res) => res.json({ ok: true, ts: new Date().to
 
 app.listen(PORT, () => console.log(`Minimal Dashboard backend na porta ${PORT}`))
 
+// Chat calls to the Campaign Creator agent (ClickUp roster fetch + a large
+// completion) can run past the default 10s function timeout — raise it.
+export const config = { maxDuration: 60 }
+
 export default app

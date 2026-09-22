@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { api } from '../api.js'
 import { theme } from '../theme.js'
 
 const FASES = ['Kickoff', 'Estratégia', 'Produção', 'Pré-lançamento', 'Live', 'Retrospectiva']
@@ -102,9 +103,19 @@ function ElSelect({ value, onChange }) {
     </select>
   )
 }
+function ResponsavelSelect({ value, members, onChange }) {
+  const known = value && !members.some(m => m.name === value)
+  return (
+    <select value={value || ''} onChange={e => onChange(e.target.value)} style={{ ...inputBase, width: 140, color: value ? theme.text : theme.textFaint }}>
+      <option value="">responsável</option>
+      {known && <option value={value}>{value}</option>}
+      {members.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+    </select>
+  )
+}
 
 // ─── Editable preview table ─────────────────────────────────────────────────
-function TaskPreview({ taskList, setTaskList, onUpload, uploading, uploadResult, listId }) {
+function TaskPreview({ taskList, setTaskList, onUpload, uploading, uploadResult, listId, members }) {
   const { campaign, grupos = [] } = taskList
   const total = grupos.reduce((acc, g) => acc + 1 + (g.tarefas || []).reduce((a, t) => a + 1 + (t.subtarefas || []).length, 0), 0)
 
@@ -118,8 +129,8 @@ function TaskPreview({ taskList, setTaskList, onUpload, uploading, uploadResult,
       return next
     })
   }
-  function updateAssignees(path, text) {
-    update(path, 'assignees', text.split(',').map(s => s.trim()).filter(Boolean))
+  function updateResponsavel(path, name) {
+    update(path, 'assignees', name ? [name] : [])
   }
   function removeRow(path) {
     setTaskList(prev => {
@@ -159,8 +170,7 @@ function TaskPreview({ taskList, setTaskList, onUpload, uploading, uploadResult,
               style={{ ...inputBase, width: '100%', fontWeight: depth === 0 ? 700 : 400 }} />
           </td>
           <td style={{ padding: '7px 6px' }}>
-            <input value={(item.assignees || []).join(', ')} onChange={e => updateAssignees(path, e.target.value)}
-              placeholder="responsável" style={{ ...inputBase, width: 130 }} />
+            <ResponsavelSelect value={(item.assignees || [])[0]} members={members} onChange={v => updateResponsavel(path, v)} />
           </td>
           <td style={{ padding: '7px 6px' }}>
             <input type="date" value={item.due_date || ''} onChange={e => update(path, 'due_date', e.target.value || null)}
@@ -278,13 +288,16 @@ export default function CampaignCreatorPage() {
   const [loading,      setLoading]      = useState(false)
   const [uploading,    setUploading]    = useState(false)
   const [uploadResult, setUploadResult] = useState(null)
+  const [members,      setMembers]      = useState([])
   const bottomRef = useRef(null)
   const inputRef  = useRef(null)
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
   useEffect(() => { setTaskList(prev => ({ ...prev, campaign: campaignName })) }, [campaignName])
+  useEffect(() => { api.getTeamMembers().then(setMembers).catch(() => {}) }, [])
 
   const listId = parseListId(listLink)
+  const sortedMembers = [...members].filter(m => m.name).sort((a, b) => a.name.localeCompare(b.name))
 
   async function send() {
     const text = input.trim()
@@ -402,7 +415,7 @@ export default function CampaignCreatorPage() {
 
       {/* ── Preview panel ────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: theme.bgSubtle, overflow: 'hidden' }}>
-        <TaskPreview taskList={taskList} setTaskList={setTaskList} onUpload={handleUpload} uploading={uploading} uploadResult={uploadResult} listId={listId} />
+        <TaskPreview taskList={taskList} setTaskList={setTaskList} onUpload={handleUpload} uploading={uploading} uploadResult={uploadResult} listId={listId} members={sortedMembers} />
       </div>
 
       <style>{`

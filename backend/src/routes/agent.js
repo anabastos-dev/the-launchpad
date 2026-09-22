@@ -103,7 +103,7 @@ router.post('/chat', async (req, res) => {
     const members = await getMembers()
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-5',
-      max_tokens: 4096,
+      max_tokens: 8192, // the model is asked to return the whole playbook every turn — 4096 risked truncating it
       system: buildSystemPrompt(members, currentTaskList),
       messages,
     })
