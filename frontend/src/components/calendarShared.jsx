@@ -102,7 +102,7 @@ export function MonthGrid({ year, month, label, events, onEventClick, onDayClick
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {dayEvs.map(ev => {
-                  const color     = ev.color || TYPE_COLORS[ev.type] || theme.textMuted
+                  const color     = TYPE_COLORS[ev.type] || theme.textMuted
                   const cancelled = ev.status === 'Cancelado'
                   const dim = cancelled ? 0.4 : 1
 

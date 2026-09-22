@@ -14,7 +14,7 @@ const TEAM_ID = '31012836'
 function listUrl(id) { return `https://app.clickup.com/${TEAM_ID}/v/li/${id}` }
 
 function EventDetail({ event, onClose }) {
-  const color = event.color || TYPE_COLORS[event.type] || '#71717A'
+  const color = TYPE_COLORS[event.type] || '#71717A'
   const fmt = (ms) => ms ? new Date(Number(ms)).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : null
   const start = fmt(event.start_date)
   const end   = fmt(event.due_date)
@@ -61,27 +61,28 @@ function EventDetail({ event, onClose }) {
         </div>
         {/* Corpo com scroll */}
         <div style={{ padding: '0 28px 24px', overflowY: 'auto', borderTop: '1px solid #F0F0F0' }}>
-          {event.premissa ? (
+          {event.photo && (
             <div style={{ paddingTop: 16 }}>
+              <img src={event.photo} alt="" style={{ width: '100%', borderRadius: 10, border: '1px solid #F0F0F0', display: 'block' }} />
+            </div>
+          )}
+
+          {event.premissa ? (
+            <div style={{ paddingTop: event.photo ? 20 : 16 }}>
               <p style={{ fontSize: 9.5, fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.09em', textTransform: 'uppercase', margin: '0 0 10px' }}>Premissa</p>
               <p style={{ fontSize: 13, color: '#3F3F46', lineHeight: 1.75, margin: 0, whiteSpace: 'pre-wrap' }}>{event.premissa}</p>
             </div>
           ) : (
-            <p style={{ fontSize: 12, color: '#A1A1AA', fontStyle: 'italic', margin: '16px 0 0' }}>Sem premissa cadastrada.</p>
+            <p style={{ fontSize: 12, color: '#A1A1AA', fontStyle: 'italic', margin: `${event.photo ? 20 : 16}px 0 0` }}>Sem premissa cadastrada.</p>
           )}
 
-          {event.photos && event.photos.length > 0 && (
-            <div style={{ paddingTop: 20 }}>
-              <p style={{ fontSize: 9.5, fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.09em', textTransform: 'uppercase', margin: '0 0 10px' }}>Fotos do produto</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                {event.photos.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 8, border: '1px solid #F0F0F0', display: 'block' }}
-                      onError={e => { e.currentTarget.closest('a').style.display = 'none' }} />
-                  </a>
-                ))}
-              </div>
-            </div>
+          {event.photosDriveLink && (
+            <a href={event.photosDriveLink} target="_blank" rel="noopener noreferrer" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 18,
+              fontSize: 12, fontWeight: 600, color: '#7C3AED', textDecoration: 'none',
+            }}>
+              📁 Ver fotos do shooting no Drive ↗
+            </a>
           )}
         </div>
       </div>

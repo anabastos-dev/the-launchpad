@@ -3,12 +3,6 @@ import { api } from '../api.js'
 import { EVENT_TYPES, TYPE_COLORS, Legend, MonthGrid, SubscribeModal } from '../components/calendarShared.jsx'
 import { theme } from '../theme.js'
 
-const PALETTE = [
-  '#E8472A', '#EF9F27', '#22C55E', '#185FA5', '#7C3AED',
-  '#EC4899', '#0EA5E9', '#14B8A6', '#F97316', '#6366F1',
-  '#84CC16', '#8B5CF6', '#18181B', '#64748B',
-]
-
 const EVENTS_KEY = 'launchpad_calendar_events'
 
 function loadEventsLocal() {
@@ -34,17 +28,38 @@ function dateStrToMs(str) {
   return new Date(y, m - 1, d).getTime()
 }
 
+// Events (photo included) are stored as one JSON blob in Redis, so a raw phone
+// photo would bloat every calendar load — shrink to a reasonable cover-image
+// size before it ever becomes a data URL.
+function downscaleImage(file, maxSize = 1000, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const reader = new FileReader()
+    reader.onerror = reject
+    reader.onload = () => { img.onerror = reject; img.onload = () => {
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }; img.src = reader.result }
+    reader.readAsDataURL(file)
+  })
+}
+
 function EventModal({ event, missions, onClose, onSave, onDelete }) {
   const isEdit = !!event?.id
   const [name,      setName]      = useState(event?.name || '')
   const [type,      setType]      = useState(event?.type || 'Post')
   const [startStr,  setStartStr]  = useState(event?.start_date ? msToDateStr(event.start_date) : (event?._prefillDate || ''))
   const [dueStr,    setDueStr]    = useState(event?.due_date   ? msToDateStr(event.due_date)   : (event?._prefillDate || ''))
-  const [color,     setColor]     = useState(event?.color || '')
   const [missionId, setMissionId] = useState(event?.missionId || '')
   const [premissa,  setPremissa]  = useState(event?.premissa || '')
   const [listLink,  setListLink]  = useState(event?.listLink || '')
-  const [photosStr, setPhotosStr] = useState((event?.photos || []).join('\n'))
+  const [photo,     setPhoto]     = useState(event?.photo || '')
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [photosDriveLink, setPhotosDriveLink] = useState(event?.photosDriveLink || '')
   const [status,    setStatus]    = useState(event?.status || '')
   const [notify,    setNotify]    = useState(false)
   const [error,     setError]     = useState(null)
@@ -58,18 +73,18 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
       status:    status || null,
       start_date: dateStrToMs(startStr),
       due_date:   dateStrToMs(dueStr) || dateStrToMs(startStr),
-      color:     color || null,
       missionId: missionId || null,
       premissa:  premissa.trim() || null,
       listLink:  listLink.trim() || null,
-      photos:    photosStr.split('\n').map(s => s.trim()).filter(Boolean),
+      photo:     photo || null,
+      photosDriveLink: photosDriveLink.trim() || null,
       ...(notify ? { _notify: true } : {}),
     })
   }
 
   const inputStyle = { border: '1px solid #E4E4E7', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#18181B', outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }
   const labelStyle = { fontSize: 10, fontWeight: 700, color: '#71717A', letterSpacing: '0.06em', textTransform: 'uppercase' }
-  const activeColor = color || TYPE_COLORS[type] || '#71717A'
+  const activeColor = TYPE_COLORS[type] || '#71717A'
 
   return (
     <div
@@ -181,24 +196,42 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
             />
           </label>
 
-          {/* Fotos do produto */}
+          {/* Foto de capa */}
           <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <span style={labelStyle}>Fotos do produto</span>
-            <textarea
-              value={photosStr}
-              onChange={e => setPhotosStr(e.target.value)}
-              placeholder={'Uma URL de imagem por linha\nhttps://...'}
-              rows={2}
-              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5, fontFamily: 'monospace', fontSize: 11.5 }}
+            <span style={labelStyle}>Foto do produto</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {photo && (
+                <img src={photo} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', border: '1px solid #E4E4E7', flexShrink: 0 }} />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async e => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  setPhotoBusy(true)
+                  try { setPhoto(await downscaleImage(file)) }
+                  catch { setError('Não foi possível processar essa imagem') }
+                  setPhotoBusy(false)
+                }}
+                style={{ fontSize: 12, color: '#71717A', flex: 1 }}
+              />
+              {photo && (
+                <button type="button" onClick={() => setPhoto('')} style={{ background: 'none', border: 'none', color: '#A1A1AA', cursor: 'pointer', fontSize: 12, flexShrink: 0 }}>remover</button>
+              )}
+            </div>
+            {photoBusy && <span style={{ fontSize: 11, color: '#A1A1AA' }}>Processando imagem…</span>}
+          </label>
+
+          {/* Link do drive do shooting */}
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={labelStyle}>Drive com fotos do shooting (opcional)</span>
+            <input
+              value={photosDriveLink}
+              onChange={e => setPhotosDriveLink(e.target.value)}
+              placeholder="https://drive.google.com/..."
+              style={inputStyle}
             />
-            {photosStr.split('\n').map(s => s.trim()).filter(Boolean).length > 0 && (
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
-                {photosStr.split('\n').map(s => s.trim()).filter(Boolean).map((url, i) => (
-                  <img key={i} src={url} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', border: '1px solid #E4E4E7' }}
-                    onError={e => { e.currentTarget.style.display = 'none' }} />
-                ))}
-              </div>
-            )}
           </label>
 
           {/* Mission link */}
@@ -218,22 +251,6 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
             </label>
           )}
 
-          {/* Color picker */}
-          <div>
-            <p style={{ ...labelStyle, margin: '0 0 8px' }}>Cor (opcional)</p>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-              {PALETTE.map(c => (
-                <button
-                  key={c} onClick={() => setColor(color === c ? '' : c)}
-                  style={{
-                    width: 24, height: 24, borderRadius: '50%', background: c, border: 'none', cursor: 'pointer',
-                    outline: color === c ? `3px solid ${c}` : '3px solid transparent',
-                    outlineOffset: 2,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
           {/* Manual notify override — dates and cancellation already notify automatically */}
           {isEdit && (
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
