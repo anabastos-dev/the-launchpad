@@ -291,8 +291,8 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
 }
 
 export default function CalendarPage() {
-  const { role } = useTeam()
-  const canEdit  = role === 'admin'
+  const { role, canEditCalendar } = useTeam()
+  const canEdit  = role === 'admin' || canEditCalendar
   const [events,   setEvents]   = useState(loadEventsLocal)
   const [missions, setMissions] = useState([])
   const [modal,    setModal]    = useState(null) // { event } or { _prefillDate }

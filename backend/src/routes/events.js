@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { syncEvents } from './calendar-sync.js'
-import { authMiddleware, requireAdmin } from '../auth.js'
+import { authMiddleware } from '../auth.js'
+import { canEditCalendar } from '../access.js'
 
 const router = Router()
 
@@ -38,8 +39,11 @@ router.get('/', async (req, res) => {
   }
 })
 
-// Protected — only the admin can write (líderes get a read-only calendar)
-router.post('/', authMiddleware, requireAdmin, async (req, res) => {
+// Protected — admin always; anyone else only if explicitly granted calendar-edit access
+router.post('/', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'admin' && !(await canEditCalendar(req.user.email))) {
+    return res.status(403).json({ error: 'Você não tem permissão para editar o calendário' })
+  }
   const events = req.body
   if (!Array.isArray(events)) return res.status(400).json({ error: 'Payload deve ser um array' })
   try {

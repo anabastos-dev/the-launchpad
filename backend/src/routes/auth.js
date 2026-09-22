@@ -1,7 +1,6 @@
 import { Router } from 'express'
-import { validateLogin, generateToken, getRole, nameFromEmail } from '../auth.js'
+import { validateLogin, generateToken, getRole, isAllowedDomain, nameFromEmail } from '../auth.js'
 import { getMembers, resolveMemberByEmail } from '../members.js'
-import { hasAccess } from '../access.js'
 
 const router = Router()
 
@@ -11,20 +10,19 @@ router.post('/login', async (req, res) => {
   if (!validateLogin(email, code)) return res.status(401).json({ error: 'Código de acesso inválido' })
 
   const role = getRole(email)
-  let name = null
 
-  if (role !== 'admin') {
-    // Anyone who isn't the admin must (a) be a real member of the ClickUp
-    // workspace and (b) have been explicitly granted access by the admin —
-    // the shared access code alone isn't enough to get in as "líder".
-    const members = await getMembers().catch(() => [])
-    const member = resolveMemberByEmail(email, members)
-    if (!member) return res.status(401).json({ error: 'E-mail não encontrado no workspace do ClickUp' })
-    if (!(await hasAccess(email))) return res.status(403).json({ error: 'Seu acesso ainda não foi liberado. Fale com a Ana.' })
-    name = member.name
+  // Anyone with a company email can log in as líder — access to specific
+  // features (calendar edit, etc.) is granted separately by the admin.
+  if (role !== 'admin' && !isAllowedDomain(email)) {
+    return res.status(401).json({ error: 'E-mail fora dos domínios liberados' })
   }
 
-  name = name || nameFromEmail(email)
+  // Use the real ClickUp name when this email matches a workspace member —
+  // falls back to a name derived from the email for anyone not in ClickUp yet.
+  const members = await getMembers().catch(() => [])
+  const member = resolveMemberByEmail(email, members)
+  const name = member?.name || nameFromEmail(email)
+
   const token = generateToken(email, name)
   res.json({ token, email, name, role })
 })

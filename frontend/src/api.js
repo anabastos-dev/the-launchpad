@@ -59,6 +59,6 @@ export const api = {
   getTeamDigest: () => request('/team/digest'),
   markDigestSeen: () => request('/team/digest/seen', { method: 'POST' }),
   getAccessList: () => request('/team/admin/access'),
-  setAccess: (email, granted) =>
-    request('/team/admin/access', { method: 'POST', body: JSON.stringify({ email, granted }) }),
+  setAccess: (email, canEditCalendar) =>
+    request('/team/admin/access', { method: 'POST', body: JSON.stringify({ email, canEditCalendar }) }),
 }

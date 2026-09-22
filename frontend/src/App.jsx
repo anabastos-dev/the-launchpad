@@ -7,7 +7,7 @@ import CampaignPage from './pages/CampaignPage.jsx'
 import AlertsPage from './pages/AlertsPage.jsx'
 import CalendarPage from './pages/CalendarPage.jsx'
 import MktPage from './pages/MktPage.jsx'
-import AgentPage from './pages/AgentPage.jsx'
+import CampaignCreatorPage from './pages/CampaignCreatorPage.jsx'
 import TeamAccessPage from './pages/TeamAccessPage.jsx'
 import TeamOnboardingModal from './components/TeamOnboardingModal.jsx'
 import TeamDigestModal from './components/TeamDigestModal.jsx'
@@ -23,12 +23,12 @@ function AppShell({ onLogout, userName }) {
   const [teamInfo, setTeamInfo] = useState(null)
 
   function refetch() {
-    api.getTeamMe().then(setTeamInfo).catch(() => setTeamInfo({ role: 'admin', needsOnboarding: false, digestPending: false }))
+    api.getTeamMe().then(setTeamInfo).catch(() => setTeamInfo({ role: 'admin', canEditCalendar: true, needsOnboarding: false, digestPending: false }))
   }
   useEffect(() => { refetch() }, [])
 
   return (
-    <TeamContext.Provider value={teamInfo || { role: 'admin', teams: [], liderados: [] }}>
+    <TeamContext.Provider value={teamInfo || { role: 'admin', canEditCalendar: true, teams: [], liderados: [] }}>
       <div style={{ display: 'flex', minHeight: '100vh' }}>
         <Sidebar onLogout={onLogout} userName={userName} alertCount={0} />
         <main style={{ flex: 1, background: theme.bg, overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -37,7 +37,7 @@ function AppShell({ onLogout, userName }) {
               <Route path="/" element={<Dashboard />} />
               <Route path="/alerts" element={<AlertsPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/agent" element={<AgentPage />} />
+              <Route path="/campaign-creator" element={<CampaignCreatorPage />} />
               <Route path="/team-access" element={<TeamAccessPage />} />
               <Route path="/campaigns/:id" element={<CampaignPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />

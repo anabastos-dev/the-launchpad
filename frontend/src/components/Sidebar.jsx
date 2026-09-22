@@ -23,7 +23,7 @@ const NAV = [
       <circle cx="7" cy="10.5" r="0.75" fill="currentColor"/>
     </svg>
   )},
-  { to: '/agent', label: 'Task Agent', icon: (
+  { to: '/campaign-creator', label: 'Campaign Creator', icon: (
     <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
       <circle cx="7" cy="5" r="3" stroke="currentColor" strokeWidth="1.3" fill="none"/>
       <path d="M2 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/>

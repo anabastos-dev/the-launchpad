@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { api } from '../api.js'
 import { theme } from '../theme.js'
 
-// Admin-only: pick which workspace members can log in as líder.
+// Admin-only: everyone with a company email can already log in as líder —
+// this page controls the one extra permission that matters: who can edit
+// the marketing calendar.
 export default function TeamAccessPage() {
   const [members, setMembers] = useState([])
   const [loading,  setLoading]  = useState(true)
@@ -18,8 +20,8 @@ export default function TeamAccessPage() {
   async function toggle(m) {
     setBusy(m.email)
     try {
-      await api.setAccess(m.email, !m.granted)
-      setMembers(prev => prev.map(x => x.email === m.email ? { ...x, granted: !x.granted } : x))
+      await api.setAccess(m.email, !m.canEditCalendar)
+      setMembers(prev => prev.map(x => x.email === m.email ? { ...x, canEditCalendar: !x.canEditCalendar } : x))
     } catch (e) {
       alert(e.message)
     } finally {
@@ -28,14 +30,15 @@ export default function TeamAccessPage() {
   }
 
   const filtered = members.filter(m => m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase()))
-  const grantedCount = members.filter(m => m.granted).length
+  const editorsCount = members.filter(m => m.canEditCalendar).length
 
   return (
     <div style={{ padding: '40px 44px 64px', maxWidth: 720 }}>
       <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
       <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em', color: theme.text, margin: '0 0 6px', lineHeight: 1 }}>Acessos da equipe</h1>
-      <p style={{ fontSize: 12, color: theme.textMuted, margin: '0 0 28px' }}>
-        {loading ? 'Carregando…' : `${grantedCount} de ${members.length} com acesso de líder`} — quem tem acesso pode logar e ver o Risk Signals do próprio time, com um resumo diário de tarefas atrasadas. Ninguém edita o calendário além de você.
+      <p style={{ fontSize: 12, color: theme.textMuted, margin: '0 0 28px', lineHeight: 1.6 }}>
+        Qualquer pessoa com e-mail @hoomy.com.br, @minimalclub.com.br ou @grupominimal.com.br já consegue logar como líder — vê o Risk Signals do próprio time e o resumo diário de tarefas atrasadas.
+        {' '}{loading ? '' : `${editorsCount} de ${members.length}`} também podem <strong>editar o calendário</strong>: ative abaixo para quem precisar disso.
       </p>
 
       {error && <p style={{ fontSize: 12, color: theme.danger }}>{error}</p>}
@@ -59,13 +62,13 @@ export default function TeamAccessPage() {
                   disabled={busy === m.email}
                   style={{
                     fontSize: 11, fontWeight: 700, padding: '6px 14px', borderRadius: 99, cursor: 'pointer',
-                    border: `1px solid ${m.granted ? 'rgba(47,158,68,0.3)' : theme.border}`,
-                    background: m.granted ? theme.successBg : theme.bgSubtle,
-                    color: m.granted ? theme.success : theme.textMuted,
+                    border: `1px solid ${m.canEditCalendar ? 'rgba(47,158,68,0.3)' : theme.border}`,
+                    background: m.canEditCalendar ? theme.successBg : theme.bgSubtle,
+                    color: m.canEditCalendar ? theme.success : theme.textMuted,
                     opacity: busy === m.email ? 0.5 : 1, flexShrink: 0,
                   }}
                 >
-                  {m.granted ? '✓ Tem acesso' : 'Sem acesso'}
+                  {m.canEditCalendar ? '✓ Edita o calendário' : 'Sem acesso ao calendário'}
                 </button>
               </div>
             ))}

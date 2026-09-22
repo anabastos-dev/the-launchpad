@@ -2,6 +2,12 @@ import jwt from 'jsonwebtoken'
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'ana.bastos@minimalclub.com.br').toLowerCase()
 
+// Anyone with a company email can log in as líder — no per-person approval
+// needed just to get in. Calendar-edit access is a separate, narrower
+// permission Ana grants explicitly (see access.js).
+const ALLOWED_DOMAINS = (process.env.ALLOWED_LOGIN_DOMAINS || 'hoomy.com.br,minimalclub.com.br,grupominimal.com.br')
+  .split(',').map(d => d.trim().toLowerCase()).filter(Boolean)
+
 export function nameFromEmail(email) {
   const local = (email || '').split('@')[0]
   return local.split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
@@ -9,6 +15,11 @@ export function nameFromEmail(email) {
 
 export function getRole(email) {
   return (email || '').toLowerCase() === ADMIN_EMAIL ? 'admin' : 'lider'
+}
+
+export function isAllowedDomain(email) {
+  const domain = (email || '').toLowerCase().split('@')[1]
+  return !!domain && ALLOWED_DOMAINS.includes(domain)
 }
 
 export function validateLogin(email, code) {

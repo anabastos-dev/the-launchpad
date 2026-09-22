@@ -1,32 +1,33 @@
 import { Router } from 'express'
 import { authMiddleware, requireAdmin } from '../auth.js'
 import { getProfile, saveProfile, markDigestSeen } from '../team.js'
-import { getGranted, setAccess } from '../access.js'
+import { getCalendarEditors, setCalendarEdit, canEditCalendar } from '../access.js'
 import { ACTIVE_CAMPAIGNS, getSubtasks } from './campaigns.js'
 import { getMembers } from '../members.js'
 
 const router = Router()
 router.use(authMiddleware)
 
-// GET /api/team/admin/access — every workspace member + whether they're granted líder access
+// GET /api/team/admin/access — every workspace member + whether they can edit the calendar
+// (login itself is open to anyone with a company email — this only controls calendar-edit)
 router.get('/admin/access', requireAdmin, async (req, res) => {
   try {
-    const [members, granted] = await Promise.all([getMembers(), getGranted()])
+    const [members, editors] = await Promise.all([getMembers(), getCalendarEditors()])
     res.json(members
       .filter(m => m.email)
-      .map(m => ({ ...m, granted: granted.includes(m.email.toLowerCase()) }))
+      .map(m => ({ ...m, canEditCalendar: editors.includes(m.email.toLowerCase()) }))
       .sort((a, b) => a.name.localeCompare(b.name)))
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
 })
 
-// POST /api/team/admin/access — grant/revoke líder access for one member
+// POST /api/team/admin/access — grant/revoke calendar-edit access for one member
 router.post('/admin/access', requireAdmin, async (req, res) => {
   try {
-    const { email, granted } = req.body || {}
+    const { email, canEditCalendar } = req.body || {}
     if (!email) return res.status(400).json({ error: 'email obrigatório' })
-    await setAccess(email, !!granted)
+    await setCalendarEdit(email, !!canEditCalendar)
     res.json({ ok: true })
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -48,12 +49,13 @@ function todayBounds() {
 router.get('/me', async (req, res) => {
   try {
     const { email, name, role } = req.user
-    if (role === 'admin') return res.json({ email, name, role, needsOnboarding: false, digestPending: false })
+    if (role === 'admin') return res.json({ email, name, role, canEditCalendar: true, needsOnboarding: false, digestPending: false })
 
-    const profile = await getProfile(email)
+    const [profile, editable] = await Promise.all([getProfile(email), canEditCalendar(email)])
     const today = new Date().toISOString().slice(0, 10)
     res.json({
       email, name, role,
+      canEditCalendar: editable,
       teams: profile?.teams || [],
       liderados: profile?.liderados || [],
       needsOnboarding: !profile,
