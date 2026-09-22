@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api.js'
+import ResponsavelFilter from '../components/ResponsavelFilter.jsx'
+import RiskTimeline from '../components/RiskTimeline.jsx'
 
 const FASE_ORDER = ['Kickoff', 'Estratégia', 'Produção', 'Pré-lançamento', 'Live', 'Retrospectiva']
 
@@ -48,6 +50,8 @@ function computeSignals(campaigns, subtasksByCampaign) {
         tarefa:     task.name,
         fase:       task.fase,
         canal:      task.canal,
+        responsavel: task.responsavel || null,
+        start_date: task.start_date,
         due_date:   task.due_date,
         url:        task.url,
       }
@@ -81,6 +85,7 @@ function computeSignals(campaigns, subtasksByCampaign) {
         campanhaId: campaign.id,
         tarefa:     task.name,
         fase:       task.fase,
+        responsavel: task.responsavel || null,
         start_date: task.start_date,
         due_date:   task.due_date,
         url:        task.url,
@@ -128,28 +133,33 @@ function AlertRow({ alert }) {
       display: 'flex', alignItems: 'flex-start', gap: 12,
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
           <span style={{
-            fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
+            fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
             color: accentColor, background: tagBg, border: `1px solid ${tagBorder}`,
-            padding: '2px 7px', borderRadius: 99,
+            padding: '3px 8px', borderRadius: 99,
           }}>
             {label}
           </span>
           <Link to={`/campaigns/${alert.campanhaId}`}
-            style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontWeight: 500 }}
+            style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontWeight: 500 }}
             onMouseEnter={e => e.currentTarget.style.color = '#E8472A'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}>
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>
             {alert.campanha}
           </Link>
+          {alert.responsavel && (
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 99 }}>
+              {alert.responsavel}
+            </span>
+          )}
         </div>
-        <p style={{ fontSize: 13, fontWeight: 600, color: '#F4F4F5', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{alert.tarefa}</p>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+        <p style={{ fontSize: 14.5, fontWeight: 600, color: '#F4F4F5', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={alert.tarefa}>{alert.tarefa}</p>
+        <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', margin: 0 }}>
           {alert.mensagem}{alert.fase ? ` · ${alert.fase}` : ''}{alert.canal ? ` · ${alert.canal}` : ''}
         </p>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        {alert.due_date && <span style={{ fontSize: 10.5, color: accentColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtDate(alert.due_date)}</span>}
+        {alert.due_date && <span style={{ fontSize: 12, color: accentColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtDate(alert.due_date)}</span>}
         {alert.url && (
           <a href={alert.url} target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.25)', display: 'flex' }}
             onMouseEnter={e => e.currentTarget.style.color = '#E8472A'}
@@ -172,27 +182,32 @@ function OpportunityRow({ opp }) {
       display: 'flex', alignItems: 'flex-start', gap: 12,
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#4ADE80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)', padding: '2px 7px', borderRadius: 99 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#4ADE80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)', padding: '3px 8px', borderRadius: 99 }}>
             Opportunity
           </span>
           <Link to={`/campaigns/${opp.campanhaId}`}
-            style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textDecoration: 'none', fontWeight: 500 }}
+            style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontWeight: 500 }}
             onMouseEnter={e => e.currentTarget.style.color = '#22C55E'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.35)'}>
+            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>
             {opp.campanha}
           </Link>
+          {opp.responsavel && (
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 99 }}>
+              {opp.responsavel}
+            </span>
+          )}
         </div>
-        <p style={{ fontSize: 13, fontWeight: 600, color: '#F4F4F5', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opp.tarefa}</p>
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: 0 }}>
+        <p style={{ fontSize: 14.5, fontWeight: 600, color: '#F4F4F5', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={opp.tarefa}>{opp.tarefa}</p>
+        <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', margin: 0 }}>
           {opp.mensagem}{opp.fase ? ` · ${opp.fase}` : ''}
         </p>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         {opp.start_date && (
           <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', margin: '0 0 1px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>início</p>
-            <span style={{ fontSize: 10.5, color: '#4ADE80', fontWeight: 700 }}>{fmtDate(opp.start_date)}</span>
+            <p style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.3)', margin: '0 0 1px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>início</p>
+            <span style={{ fontSize: 12, color: '#4ADE80', fontWeight: 700 }}>{fmtDate(opp.start_date)}</span>
           </div>
         )}
         {opp.url && (
@@ -221,6 +236,8 @@ export default function AlertsPage() {
   const [opportunities, setOpportunities] = useState([])
   const [campaigns,     setCampaigns]     = useState([])
   const [filter,        setFilter]        = useState('all')
+  const [people,        setPeople]        = useState(new Set())
+  const [view,          setView]          = useState('lista') // 'lista' | 'timeline'
   const [loading,       setLoading]       = useState(true)
   const [error,         setError]         = useState(null)
 
@@ -242,95 +259,132 @@ export default function AlertsPage() {
     }).catch(e => { setError(e.message); setLoading(false) })
   }, [])
 
-  const visAlerts = filter === 'all' ? alerts : alerts.filter(a => a.campanhaId === filter)
-  const visOpps   = filter === 'all' ? opportunities : opportunities.filter(o => o.campanhaId === filter)
+  const byCampaign = (x) => filter === 'all' || x.campanhaId === filter
+  const byPerson   = (x) => people.size === 0 || (x.responsavel && people.has(x.responsavel))
+
+  const visAlerts = alerts.filter(a => byCampaign(a) && byPerson(a))
+  const visOpps   = opportunities.filter(o => byCampaign(o) && byPerson(o))
   const high   = visAlerts.filter(a => a.severidade === 'HIGH')
   const medium = visAlerts.filter(a => a.severidade === 'MEDIUM')
 
+  const allPeople = [...new Set([...alerts, ...opportunities].map(x => x.responsavel).filter(Boolean))].sort()
+
+  const timelineItems = [
+    ...high.map(a => ({ ...a, severity: 'HIGH' })),
+    ...medium.map(a => ({ ...a, severity: 'MEDIUM' })),
+    ...visOpps.map(o => ({ ...o, severity: 'OPPORTUNITY' })),
+  ]
+
   return (
-    <div style={{ padding: '44px 52px 64px', maxWidth: 880 }}>
+    <div style={{ padding: '44px 52px 64px', maxWidth: 1140 }}>
 
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 28 }}>
         <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: '0 0 10px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 12 }}>
           <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.04em', color: '#F4F4F5', margin: 0, lineHeight: 1 }}>Risk Signals</h1>
           {!loading && !error && (
             <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-              <span style={{ fontSize: 12, color: '#F87171', fontWeight: 600 }}>{high.length} crítico{high.length !== 1 ? 's' : ''}</span>
-              <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 12 }}>·</span>
-              <span style={{ fontSize: 12, color: '#FBBF24', fontWeight: 600 }}>{medium.length} vencem hoje</span>
-              <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 12 }}>·</span>
-              <span style={{ fontSize: 12, color: '#4ADE80', fontWeight: 600 }}>{visOpps.length} opportunit{visOpps.length !== 1 ? 'ies' : 'y'}</span>
+              <span style={{ fontSize: 13, color: '#F87171', fontWeight: 600 }}>{high.length} crítico{high.length !== 1 ? 's' : ''}</span>
+              <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 13 }}>·</span>
+              <span style={{ fontSize: 13, color: '#FBBF24', fontWeight: 600 }}>{medium.length} vencem hoje</span>
+              <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 13 }}>·</span>
+              <span style={{ fontSize: 13, color: '#4ADE80', fontWeight: 600 }}>{visOpps.length} opportunit{visOpps.length !== 1 ? 'ies' : 'y'}</span>
             </div>
           )}
-          {loading && <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>Carregando…</span>}
-          {error && <span style={{ fontSize: 12, color: '#F87171' }}>{error}</span>}
+          {loading && <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Carregando…</span>}
+          {error && <span style={{ fontSize: 13, color: '#F87171' }}>{error}</span>}
         </div>
         <div style={{ height: 1, background: 'rgba(255,255,255,0.07)' }} />
       </div>
 
-      {/* Campaign filter pills */}
-      {!loading && !error && campaigns.length > 1 && (
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 32 }}>
-          {[{ id: 'all', name: 'Todas' }, ...campaigns].map(c => {
-            const active = filter === c.id
-            return (
-              <button key={c.id} onClick={() => setFilter(c.id)} style={{
-                fontSize: 11.5, fontWeight: active ? 600 : 400,
-                padding: '5px 14px', borderRadius: 99,
-                border: `1px solid ${active ? 'rgba(255,255,255,0.15)' : 'transparent'}`,
-                background: active ? 'rgba(255,255,255,0.09)' : 'transparent',
-                color: active ? '#F4F4F5' : 'rgba(255,255,255,0.35)',
-                cursor: 'pointer',
-                transition: 'all 0.12s',
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'rgba(255,255,255,0.6)' }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}
-              >
-                {c.name}
+      {/* Filters row: campaign pills · responsável selector · list/timeline toggle */}
+      {!loading && !error && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {campaigns.length > 1 && (
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {[{ id: 'all', name: 'Todas' }, ...campaigns].map(c => {
+                  const active = filter === c.id
+                  return (
+                    <button key={c.id} onClick={() => setFilter(c.id)} style={{
+                      fontSize: 12.5, fontWeight: active ? 600 : 400,
+                      padding: '6px 14px', borderRadius: 99,
+                      border: `1px solid ${active ? 'rgba(255,255,255,0.15)' : 'transparent'}`,
+                      background: active ? 'rgba(255,255,255,0.09)' : 'transparent',
+                      color: active ? '#F4F4F5' : 'rgba(255,255,255,0.4)',
+                      cursor: 'pointer',
+                      transition: 'all 0.12s',
+                    }}
+                    onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'rgba(255,255,255,0.65)' }}
+                    onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
+                    >
+                      {c.name}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            <ResponsavelFilter people={allPeople} selected={people} onChange={setPeople} />
+          </div>
+
+          {/* Lista / Linha do tempo toggle */}
+          <div style={{ display: 'flex', gap: 3, background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 3 }}>
+            {[['lista', 'Lista'], ['timeline', 'Linha do tempo']].map(([id, label]) => (
+              <button key={id} onClick={() => setView(id)} style={{
+                fontSize: 12.5, fontWeight: 600, padding: '6px 13px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: view === id ? '#F4F4F5' : 'transparent',
+                color: view === id ? '#0B0C0F' : 'rgba(255,255,255,0.45)',
+              }}>
+                {label}
               </button>
-            )
-          })}
+            ))}
+          </div>
         </div>
       )}
 
       {/* Empty state */}
       {!loading && !error && high.length === 0 && medium.length === 0 && visOpps.length === 0 && (
         <div style={{ background: 'rgba(74,222,128,0.07)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 12, padding: '28px 24px', textAlign: 'center' }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#4ADE80', margin: '0 0 4px' }}>Tudo no prazo</p>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: 0 }}>Nenhum sinal de risco detectado nas campanhas ativas.</p>
+          <p style={{ fontSize: 14.5, fontWeight: 600, color: '#4ADE80', margin: '0 0 4px' }}>Tudo no prazo</p>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>Nenhum sinal de risco detectado{people.size > 0 ? ' para as pessoas selecionadas' : ' nas campanhas ativas'}.</p>
         </div>
       )}
 
-      {/* Críticos */}
-      {high.length > 0 && (
-        <section style={{ marginBottom: 36 }}>
-          <SectionLabel color="#E24B4A">Críticos</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {high.map(a => <AlertRow key={a.id} alert={a} />)}
-          </div>
-        </section>
-      )}
+      {view === 'timeline' ? (
+        timelineItems.length > 0 && <RiskTimeline items={timelineItems} />
+      ) : (
+        <>
+          {/* Críticos */}
+          {high.length > 0 && (
+            <section style={{ marginBottom: 36 }}>
+              <SectionLabel color="#E24B4A">Críticos</SectionLabel>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {high.map(a => <AlertRow key={a.id} alert={a} />)}
+              </div>
+            </section>
+          )}
 
-      {/* Vencem hoje */}
-      {medium.length > 0 && (
-        <section style={{ marginBottom: 36 }}>
-          <SectionLabel color="#F59E0B">Vencem hoje</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {medium.map(a => <AlertRow key={a.id} alert={a} />)}
-          </div>
-        </section>
-      )}
+          {/* Vencem hoje */}
+          {medium.length > 0 && (
+            <section style={{ marginBottom: 36 }}>
+              <SectionLabel color="#F59E0B">Vencem hoje</SectionLabel>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {medium.map(a => <AlertRow key={a.id} alert={a} />)}
+              </div>
+            </section>
+          )}
 
-      {/* Opportunities */}
-      {visOpps.length > 0 && (
-        <section>
-          <SectionLabel color="#22C55E">Opportunities · pode adiantar</SectionLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {visOpps.map(o => <OpportunityRow key={o.id} opp={o} />)}
-          </div>
-        </section>
+          {/* Opportunities */}
+          {visOpps.length > 0 && (
+            <section>
+              <SectionLabel color="#22C55E">Opportunities · pode adiantar</SectionLabel>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {visOpps.map(o => <OpportunityRow key={o.id} opp={o} />)}
+              </div>
+            </section>
+          )}
+        </>
       )}
     </div>
   )
