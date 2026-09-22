@@ -8,6 +8,7 @@ import webhookRoutes from './routes/webhooks.js'
 import eventsRoutes from './routes/events.js'
 import agentRoutes from './routes/agent.js'
 import calendarSyncRoutes from './routes/calendar-sync.js'
+import teamRoutes from './routes/team.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -17,7 +18,8 @@ app.use(cors({
   origin: (origin, cb) => cb(null, !origin || allowedOrigins.some(o => origin.startsWith(o))),
   credentials: true,
 }))
-app.use(express.json())
+// Raised from the 100kb default — calendar events can carry a base64 cover photo.
+app.use(express.json({ limit: '10mb' }))
 
 app.use('/api/auth', authRoutes)
 app.use('/api/campaigns', campaignRoutes)
@@ -26,6 +28,7 @@ app.use('/api/webhooks', webhookRoutes)
 app.use('/api/events', eventsRoutes)
 app.use('/api/agent', agentRoutes)
 app.use('/api/calendar', calendarSyncRoutes)
+app.use('/api/team', teamRoutes)
 
 app.get('/api/healthcheck', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }))
 

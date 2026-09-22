@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
-import { EVENT_TYPES, TYPE_COLORS, Legend, MonthGrid, SubscribeModal } from '../components/calendarShared.jsx'
+import { EVENT_TYPES, TYPE_COLORS, Legend, MonthGrid, SubscribeModal, EventDetail, DetailPanelStyles } from '../components/calendarShared.jsx'
 import { theme } from '../theme.js'
+import { useTeam } from '../teamContext.jsx'
 
 const EVENTS_KEY = 'launchpad_calendar_events'
 
@@ -290,9 +291,12 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
 }
 
 export default function CalendarPage() {
+  const { role } = useTeam()
+  const canEdit  = role === 'admin'
   const [events,   setEvents]   = useState(loadEventsLocal)
   const [missions, setMissions] = useState([])
   const [modal,    setModal]    = useState(null) // { event } or { _prefillDate }
+  const [viewing,  setViewing]  = useState(null) // read-only detail, for líderes
   const [syncMsg,  setSyncMsg]  = useState(null)
   const [subscribeOpen, setSubscribeOpen] = useState(false)
 
@@ -356,7 +360,7 @@ export default function CalendarPage() {
           <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
           <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em', color: theme.text, margin: '0 0 6px', lineHeight: 1 }}>Calendário Editorial</h1>
           <p style={{ fontSize: 12, color: theme.textMuted, margin: 0 }}>
-            {events.length} evento{events.length !== 1 ? 's' : ''} · clique em um dia para adicionar
+            {events.length} evento{events.length !== 1 ? 's' : ''}{canEdit ? ' · clique em um dia para adicionar' : ''}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -364,16 +368,20 @@ export default function CalendarPage() {
             onClick={() => setSubscribeOpen(true)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
           >🔔 Receber mudanças e alertas</button>
-          <button
-            onClick={handleSync}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
-          >{syncMsg || '↑ Publicar'}</button>
-          <button
-            onClick={() => setModal({})}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.accent, border: 'none', borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
-          >
-          + Novo evento
-          </button>
+          {canEdit && (
+            <>
+              <button
+                onClick={handleSync}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
+              >{syncMsg || '↑ Publicar'}</button>
+              <button
+                onClick={() => setModal({})}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.accent, border: 'none', borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
+              >
+              + Novo evento
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -388,7 +396,9 @@ export default function CalendarPage() {
           [11, 'Novembro'],
           [12, 'Dezembro'],
         ].map(([m, label]) => (
-          <MonthGrid key={m} year={year} month={m} label={`${label} ${year}`} events={events} onEventClick={ev => setModal({ ...ev })} onDayClick={handleDayClick} />
+          <MonthGrid key={m} year={year} month={m} label={`${label} ${year}`} events={events}
+            onEventClick={ev => canEdit ? setModal({ ...ev }) : setViewing(ev)}
+            onDayClick={canEdit ? handleDayClick : undefined} />
         ))}
 
         {/* Legend */}
@@ -415,7 +425,9 @@ export default function CalendarPage() {
           onDelete={handleDelete}
         />
       )}
+      {viewing && <EventDetail event={viewing} onClose={() => setViewing(null)} />}
       {subscribeOpen && <SubscribeModal onClose={() => setSubscribeOpen(false)} />}
+      <DetailPanelStyles />
     </div>
   )
 }

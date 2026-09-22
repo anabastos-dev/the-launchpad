@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { api } from '../api.js'
 import { theme } from '../theme.js'
+import { useTeam } from '../teamContext.jsx'
 
 const STATUS_DOT = { 'atrasada': '#E03E3E', 'bloqueada': '#E03E3E', 'em risco': '#D9730D' }
 function dotColor(status) { return STATUS_DOT[(status || '').toLowerCase()] || '#2F9E44' }
@@ -38,8 +39,19 @@ const NAV = [
   )},
 ]
 
+const ADMIN_NAV = [
+  { to: '/team-access', label: 'Acessos', icon: (
+    <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+      <circle cx="5" cy="4.5" r="2" stroke="currentColor" strokeWidth="1.3" fill="none"/>
+      <path d="M1.5 12c0-2 1.5-3.5 3.5-3.5S8.5 10 8.5 12" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
+      <path d="M9.5 5.5L11 7l2.5-2.5" stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )},
+]
+
 export default function Sidebar({ onLogout, userName = 'Ana Bastos' }) {
   const loc = useLocation()
+  const { role } = useTeam()
   const [campaigns, setCampaigns] = useState([])
 
   useEffect(() => {
@@ -74,7 +86,7 @@ export default function Sidebar({ onLogout, userName = 'Ana Bastos' }) {
 
       {/* Main nav */}
       <nav style={{ padding: '2px 8px 0' }}>
-        {NAV.map(item => {
+        {[...NAV, ...(role === 'admin' ? ADMIN_NAV : [])].map(item => {
           const active = item.exact ? loc.pathname === item.to : loc.pathname.startsWith(item.to)
           return (
             <Link key={item.to} to={item.to} style={{

@@ -2,8 +2,10 @@ import { Router } from 'express'
 import Anthropic from '@anthropic-ai/sdk'
 import * as clickup from '../clickup.js'
 import { getMembers, resolveMemberId } from '../members.js'
+import { authMiddleware } from '../auth.js'
 
 const router = Router()
+router.use(authMiddleware) // every route here mutates ClickUp or is internal tooling — never public
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 const FASE_FIELD = 'b16eadf9-ee56-4761-8ed1-929b1f28235a'

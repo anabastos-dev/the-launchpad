@@ -52,4 +52,13 @@ export const api = {
   getCalendarSubscribers: () => request('/calendar/subscribers'),
   subscribeToCalendar: (email) =>
     request('/calendar/subscribers', { method: 'POST', body: JSON.stringify({ email }) }),
+  getTeamMe: () => request('/team/me'),
+  saveTeamMe: ({ teams, liderados }) =>
+    request('/team/me', { method: 'POST', body: JSON.stringify({ teams, liderados }) }),
+  getTeamMembers: () => request('/team/members'),
+  getTeamDigest: () => request('/team/digest'),
+  markDigestSeen: () => request('/team/digest/seen', { method: 'POST' }),
+  getAccessList: () => request('/team/admin/access'),
+  setAccess: (email, granted) =>
+    request('/team/admin/access', { method: 'POST', body: JSON.stringify({ email, granted }) }),
 }

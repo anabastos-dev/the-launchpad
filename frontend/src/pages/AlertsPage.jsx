@@ -4,6 +4,7 @@ import { api } from '../api.js'
 import ResponsavelFilter from '../components/ResponsavelFilter.jsx'
 import RiskTimeline from '../components/RiskTimeline.jsx'
 import { theme } from '../theme.js'
+import { useTeam } from '../teamContext.jsx'
 
 const FASE_ORDER = ['Kickoff', 'Estratégia', 'Produção', 'Pré-lançamento', 'Live', 'Retrospectiva']
 
@@ -232,15 +233,24 @@ function SectionLabel({ color, children }) {
 }
 
 export default function AlertsPage() {
+  const { role, name, liderados } = useTeam()
+  const myTeam = role === 'lider' ? new Set([name, ...(liderados || [])]) : null
+
   const [alerts,        setAlerts]        = useState([])
   const [opportunities, setOpportunities] = useState([])
   const [campaigns,     setCampaigns]     = useState([])
   const [allPeople,     setAllPeople]     = useState([])
   const [filter,        setFilter]        = useState('all')
-  const [people,        setPeople]        = useState(new Set())
+  const [people,        setPeople]        = useState(() => myTeam || new Set())
+  const [teamScope,     setTeamScope]     = useState('meu') // 'meu' | 'todo' — líder only
   const [view,          setView]          = useState('lista') // 'lista' | 'timeline'
   const [loading,       setLoading]       = useState(true)
   const [error,         setError]         = useState(null)
+
+  function setScope(scope) {
+    setTeamScope(scope)
+    setPeople(scope === 'meu' ? (myTeam || new Set()) : new Set())
+  }
 
   useEffect(() => {
     api.getCampaigns().then(async cs => {
@@ -329,6 +339,20 @@ export default function AlertsPage() {
               </div>
             )}
             <ResponsavelFilter people={allPeople} selected={people} onChange={setPeople} />
+            {role === 'lider' && (
+              <div style={{ display: 'flex', gap: 3, background: theme.bgSubtle, borderRadius: theme.radiusSm, padding: 3 }}>
+                {[['meu', 'Meu time'], ['todo', 'Todo o time']].map(([id, label]) => (
+                  <button key={id} onClick={() => setScope(id)} style={{
+                    fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                    background: teamScope === id ? theme.bg : 'transparent',
+                    color: teamScope === id ? theme.text : theme.textMuted,
+                    boxShadow: teamScope === id ? `0 1px 2px ${theme.border}` : 'none',
+                  }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Lista / Linha do tempo toggle */}

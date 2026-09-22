@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { syncEvents } from './calendar-sync.js'
+import { authMiddleware, requireAdmin } from '../auth.js'
 
 const router = Router()
 
@@ -37,8 +38,8 @@ router.get('/', async (req, res) => {
   }
 })
 
-// Protected — only logged-in user (Ana) can write
-router.post('/', async (req, res) => {
+// Protected — only the admin can write (líderes get a read-only calendar)
+router.post('/', authMiddleware, requireAdmin, async (req, res) => {
   const events = req.body
   if (!Array.isArray(events)) return res.status(400).json({ error: 'Payload deve ser um array' })
   try {

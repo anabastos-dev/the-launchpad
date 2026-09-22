@@ -4,11 +4,12 @@ import { buildDependencyGraph, propagateCascade, getRealStatus, computeRisk } fr
 import * as cache from '../cache.js'
 import { FIELD_IDS, getFieldValue } from '../fieldMap.js'
 import { getFinalized, finalize, unfinalize } from '../finalized.js'
+import { authMiddleware } from '../auth.js'
 
 const router = Router()
 
 // Active campaigns: each campaign is a dedicated ClickUp list
-const ACTIVE_CAMPAIGNS = () => [
+export const ACTIVE_CAMPAIGNS = () => [
   {
     id:         process.env.CLICKUP_AUMENTO_PRECOS_LIST || '901327733805',
     name:       'Aumento de Preço 2026',
@@ -139,42 +140,54 @@ router.get('/', async (req, res) => {
 })
 
 // POST /api/campaigns/:id/finalize — mark campaign as finalized
-router.post('/:id/finalize', async (req, res) => {
+router.post('/:id/finalize', authMiddleware, async (req, res) => {
   await finalize(req.params.id)
   res.json({ ok: true })
 })
 
 // DELETE /api/campaigns/:id/finalize — unmark campaign as finalized
-router.delete('/:id/finalize', async (req, res) => {
+router.delete('/:id/finalize', authMiddleware, async (req, res) => {
   await unfinalize(req.params.id)
   res.json({ ok: true })
 })
 
 
+// Shared by GET /:id/subtasks and the team digest — cached briefly since it's
+// a handful of ClickUp API calls per campaign.
+export async function getSubtasks(listId, force = false) {
+  const key = `subtasks:${listId}`
+  if (!force) {
+    const cached = cache.get(key)
+    if (cached) return cached
+  }
+  const allTasks = await clickup.getTasks(listId, { include_closed: true })
+  const subtasks = allTasks.filter(t => t.parent) // leaf-level tasks only
+  const { FIELD_IDS, getFieldValue, getPeopleField, getPeopleArrayField } = await import('../fieldMap.js')
+  const mapped = subtasks.map(t => ({
+    id: t.id,
+    name: t.name,
+    status: t.status?.status,
+    statusType: t.status?.type,
+    due_date: t.due_date,
+    start_date: t.start_date,
+    url: t.url,
+    responsavel: getPeopleField(t, FIELD_IDS.responsavel) || t.assignees?.[0]?.username || null,
+    aprovador: getPeopleField(t, FIELD_IDS.aprovador),
+    consultar: getFieldValue(t, FIELD_IDS.consultar),
+    informar: getPeopleArrayField(t, FIELD_IDS.informar),
+    fase: getFieldValue(t, FIELD_IDS.faseCampanha),
+    canal: getFieldValue(t, FIELD_IDS.canal),
+    etapaLimitante: getFieldValue(t, FIELD_IDS.etapaLimitante) === 'Sim',
+    leadTime: getFieldValue(t, FIELD_IDS.leadTime),
+  }))
+  cache.set(key, mapped)
+  return mapped
+}
+
 // GET /api/campaigns/:id/subtasks — tasks with RACI for a campaign (id = ClickUp list ID)
 router.get('/:id/subtasks', async (req, res) => {
   try {
-    const allTasks = await clickup.getTasks(req.params.id, { include_closed: true })
-    // Return only leaf-level subtasks (tasks that have a parent)
-    const subtasks = allTasks.filter(t => t.parent)
-    const { FIELD_IDS, getFieldValue, getPeopleField, getPeopleArrayField } = await import('../fieldMap.js')
-    res.json(subtasks.map(t => ({
-      id: t.id,
-      name: t.name,
-      status: t.status?.status,
-      statusType: t.status?.type,
-      due_date: t.due_date,
-      start_date: t.start_date,
-      url: t.url,
-      responsavel: getPeopleField(t, FIELD_IDS.responsavel) || t.assignees?.[0]?.username || null,
-      aprovador: getPeopleField(t, FIELD_IDS.aprovador),
-      consultar: getFieldValue(t, FIELD_IDS.consultar),
-      informar: getPeopleArrayField(t, FIELD_IDS.informar),
-      fase: getFieldValue(t, FIELD_IDS.faseCampanha),
-      canal: getFieldValue(t, FIELD_IDS.canal),
-      etapaLimitante: getFieldValue(t, FIELD_IDS.etapaLimitante) === 'Sim',
-      leadTime: getFieldValue(t, FIELD_IDS.leadTime),
-    })))
+    res.json(await getSubtasks(req.params.id))
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
