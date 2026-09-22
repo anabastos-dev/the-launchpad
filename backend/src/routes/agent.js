@@ -93,56 +93,63 @@ ${playbookNote}
 Responda sempre em português do Brasil. Seja direto e objetivo.`
 }
 
+// Streams raw text chunks as they arrive from the model, instead of buffering
+// the whole reply — a long non-streamed request sat idle on the wire for
+// 20-30s+ while it regenerated the full playbook, and Vercel's proxy between
+// the frontend and this backend project was silently dropping that idle
+// connection: the function itself completed fine (logged 200), but the
+// browser's fetch() never received anything and hung forever. Streaming
+// keeps bytes actively flowing so the connection never looks idle.
+async function streamText(res, params) {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.flushHeaders?.()
+  const stream = anthropic.messages.stream(params)
+  for await (const text of stream.textStream) {
+    res.write(text)
+  }
+  res.end()
+}
+
 // POST /api/agent/strategy-chat — a free-form sounding board, separate from the
 // playbook-editing chat, so brainstorming doesn't force a full table regeneration
 router.post('/strategy-chat', async (req, res) => {
+  const { messages = [], campaignName = '' } = req.body
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(503).json({ error: 'ANTHROPIC_API_KEY não configurada no backend' })
+  }
   try {
-    const { messages = [], campaignName = '' } = req.body
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return res.status(503).json({ error: 'ANTHROPIC_API_KEY não configurada no backend' })
-    }
-    const response = await anthropic.messages.create({
+    await streamText(res, {
       model: 'claude-sonnet-5',
       max_tokens: 1024,
       system: `Você é um parceiro de estratégia de marketing da Minimal Club, ajudando Ana (ou um líder autorizado) a pensar a campanha${campaignName ? ` "${campaignName}"` : ''} antes ou durante a montagem da planilha de tarefas.
 Converse normalmente — sugira narrativas, questione hipóteses, ajude a decidir público, tom, canais. Não gere listas de tarefas nem JSON aqui; isso é feito em outro chat, ao lado. Responda em português do Brasil, direto e objetivo.`,
       messages,
     })
-    const text = response.content?.[0]?.text || ''
-    res.json({ message: text })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    if (!res.headersSent) res.status(500).json({ error: err.message })
+    else res.end()
   }
 })
 
-// POST /api/agent/chat
+// POST /api/agent/chat — streams text; the frontend extracts <TASK_LIST> from
+// the accumulated text once the stream ends (same shape the model always produced)
 router.post('/chat', async (req, res) => {
+  const { messages = [], currentTaskList = null } = req.body
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(503).json({ error: 'ANTHROPIC_API_KEY não configurada no backend' })
+  }
   try {
-    const { messages = [], currentTaskList = null } = req.body
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return res.status(503).json({ error: 'ANTHROPIC_API_KEY não configurada no backend' })
-    }
     const members = await getMembers()
-    const response = await anthropic.messages.create({
+    await streamText(res, {
       model: 'claude-sonnet-5',
       max_tokens: 8192, // the model is asked to return the whole playbook every turn — 4096 risked truncating it
       system: buildSystemPrompt(members, currentTaskList),
       messages,
     })
-    const text = response.content?.[0]?.text || ''
-    const taskListMatch = text.match(/<TASK_LIST>([\s\S]*?)<\/TASK_LIST>/)
-    let taskList = null
-    let displayText = text
-    if (taskListMatch) {
-      try {
-        taskList = JSON.parse(taskListMatch[1].trim())
-        displayText = text.replace(/<TASK_LIST>[\s\S]*?<\/TASK_LIST>/, '').trim()
-        if (!displayText) displayText = 'Planilha gerada! Revise à direita e clique em **Subir no ClickUp** quando estiver pronta.'
-      } catch { /* mantém o texto original se o JSON for inválido */ }
-    }
-    res.json({ message: displayText, taskList })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    if (!res.headersSent) res.status(500).json({ error: err.message })
+    else res.end()
   }
 })
 

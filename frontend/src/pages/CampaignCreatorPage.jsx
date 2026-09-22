@@ -302,26 +302,68 @@ export default function CampaignCreatorPage() {
   const listId = parseListId(listLink)
   const sortedMembers = [...members].filter(m => m.name).sort((a, b) => a.name.localeCompare(b.name))
 
+  // Reads a streamed text/plain response chunk by chunk, calling onChunk with
+  // the accumulated text so far each time; returns the full text at the end.
+  async function streamChat(url, body, signal, onChunk) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('minimal_token')}` },
+      body: JSON.stringify(body),
+      signal,
+    })
+    const contentType = res.headers.get('content-type') || ''
+    if (!res.ok || contentType.includes('application/json')) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || `HTTP ${res.status}`)
+    }
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let full = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      full += decoder.decode(value, { stream: true })
+      onChunk(full)
+    }
+    return full
+  }
+
+  function stripTaskListBlock(text) {
+    const idx = text.indexOf('<TASK_LIST>')
+    if (idx === -1) return text
+    return text.slice(0, idx).trim() || 'Montando a planilha…'
+  }
+
   async function sendPlan(text) {
     const newMessages = [...messages, { role: 'user', content: text }]
     setMessages(newMessages)
     setLoading(true)
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 55000) // backend allows up to 60s
-    try {
-      const res = await fetch('/api/agent/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('minimal_token')}` },
-        body: JSON.stringify({ messages: newMessages, currentTaskList: taskList }),
-        signal: controller.signal,
+    let started = false
+    function pushOrUpdate(content) {
+      setMessages(prev => {
+        const next = [...prev]
+        if (!started) { started = true; next.push({ role: 'assistant', content }) }
+        else next[next.length - 1] = { role: 'assistant', content }
+        return next
       })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      setMessages(prev => [...prev, { role: 'assistant', content: data.message }])
-      if (data.taskList) { setTaskList(data.taskList); setUploadResult(null) }
+    }
+    try {
+      const full = await streamChat('/api/agent/chat', { messages: newMessages, currentTaskList: taskList }, controller.signal,
+        acc => pushOrUpdate(stripTaskListBlock(acc)))
+      const match = full.match(/<TASK_LIST>([\s\S]*?)<\/TASK_LIST>/)
+      if (match) {
+        try {
+          setTaskList(JSON.parse(match[1].trim()))
+          setUploadResult(null)
+          const displayText = full.replace(/<TASK_LIST>[\s\S]*?<\/TASK_LIST>/, '').trim() || 'Planilha gerada! Revise à direita e clique em **Subir no ClickUp** quando estiver pronta.'
+          pushOrUpdate(displayText)
+        } catch { /* keeps the streamed text as-is if the JSON block is malformed */ }
+      }
     } catch (err) {
       const msg = err.name === 'AbortError' ? 'Demorou demais e eu cancelei — tenta de novo, ou manda um briefing mais curto.' : `Erro: ${err.message}`
-      setMessages(prev => [...prev, { role: 'assistant', content: msg }])
+      pushOrUpdate(msg)
     } finally {
       clearTimeout(timeout)
       setLoading(false)
@@ -333,17 +375,19 @@ export default function CampaignCreatorPage() {
     const newMessages = [...stratMessages, { role: 'user', content: text }]
     setStratMessages(newMessages)
     setStratLoading(true)
-    try {
-      const res = await fetch('/api/agent/strategy-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('minimal_token')}` },
-        body: JSON.stringify({ messages: newMessages, campaignName }),
+    let started = false
+    function pushOrUpdate(content) {
+      setStratMessages(prev => {
+        const next = [...prev]
+        if (!started) { started = true; next.push({ role: 'assistant', content }) }
+        else next[next.length - 1] = { role: 'assistant', content }
+        return next
       })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      setStratMessages(prev => [...prev, { role: 'assistant', content: data.message }])
+    }
+    try {
+      await streamChat('/api/agent/strategy-chat', { messages: newMessages, campaignName }, undefined, pushOrUpdate)
     } catch (err) {
-      setStratMessages(prev => [...prev, { role: 'assistant', content: `Erro: ${err.message}` }])
+      pushOrUpdate(`Erro: ${err.message}`)
     } finally {
       setStratLoading(false)
       inputRef.current?.focus()
@@ -426,7 +470,7 @@ export default function CampaignCreatorPage() {
               </div>
             )}
             {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
-            {loading && (
+            {loading && messages[messages.length - 1]?.role !== 'assistant' && (
               <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
                 <div style={{ background: theme.bgSubtle, borderRadius: '4px 14px 14px 14px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
@@ -452,7 +496,7 @@ export default function CampaignCreatorPage() {
               </div>
             )}
             {stratMessages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
-            {stratLoading && (
+            {stratLoading && stratMessages[stratMessages.length - 1]?.role !== 'assistant' && (
               <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
                 <div style={{ background: theme.bgSubtle, borderRadius: '4px 14px 14px 14px', padding: '12px 16px' }}>
                   <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
