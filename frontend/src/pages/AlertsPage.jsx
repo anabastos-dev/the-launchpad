@@ -235,6 +235,7 @@ export default function AlertsPage() {
   const [alerts,        setAlerts]        = useState([])
   const [opportunities, setOpportunities] = useState([])
   const [campaigns,     setCampaigns]     = useState([])
+  const [allPeople,     setAllPeople]     = useState([])
   const [filter,        setFilter]        = useState('all')
   const [people,        setPeople]        = useState(new Set())
   const [view,          setView]          = useState('lista') // 'lista' | 'timeline'
@@ -255,6 +256,11 @@ export default function AlertsPage() {
       const { alerts, opportunities } = computeSignals(cs, subtasksByCampaign)
       setAlerts(alerts)
       setOpportunities(opportunities)
+      // Every responsável with a task, not just those with an active alert/opportunity —
+      // otherwise someone with no signals right now can't even select themselves in the filter.
+      const peopleSet = new Set()
+      Object.values(subtasksByCampaign).forEach(tasks => tasks.forEach(t => { if (t.responsavel) peopleSet.add(t.responsavel) }))
+      setAllPeople([...peopleSet].sort())
       setLoading(false)
     }).catch(e => { setError(e.message); setLoading(false) })
   }, [])
@@ -266,8 +272,6 @@ export default function AlertsPage() {
   const visOpps   = opportunities.filter(o => byCampaign(o) && byPerson(o))
   const high   = visAlerts.filter(a => a.severidade === 'HIGH')
   const medium = visAlerts.filter(a => a.severidade === 'MEDIUM')
-
-  const allPeople = [...new Set([...alerts, ...opportunities].map(x => x.responsavel).filter(Boolean))].sort()
 
   const timelineItems = [
     ...high.map(a => ({ ...a, severity: 'HIGH' })),
