@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
+import { theme } from '../theme.js'
 
 const STATUS_COLOR = {
-  'atrasada': '#E24B4A',
-  'bloqueada': '#E24B4A',
-  'em risco':  '#EF9F27',
+  'atrasada': theme.danger,
+  'bloqueada': theme.danger,
+  'em risco':  theme.warning,
 }
 function barColor(status) {
-  return STATUS_COLOR[(status || '').toLowerCase()] || '#22C55E'
+  return STATUS_COLOR[(status || '').toLowerCase()] || theme.success
 }
 
 function daysBetween(a, b) {
@@ -40,7 +41,6 @@ export default function MissionGantt({ compact = false, campaigns = [] }) {
 
   // Ruler ticks every ~7 days
   const ticks = []
-  const tickMs = rangeStart
   for (let i = 0; i <= totalDays; i += 7) {
     const d = new Date(rangeStart + i * 86400000)
     ticks.push({ ms: d.getTime(), label: `${d.getDate()}/${String(d.getMonth() + 1).padStart(2, '0')}` })
@@ -53,18 +53,18 @@ export default function MissionGantt({ compact = false, campaigns = [] }) {
         <div />
         <div style={{ position: 'relative', height: 20 }}>
           {ticks.map(({ ms, label }) => (
-            <span key={ms} style={{ position: 'absolute', left: `${toPct(ms)}%`, fontSize: 9, color: 'rgba(255,255,255,0.25)', fontWeight: 600, transform: 'translateX(-50%)', letterSpacing: '0.04em' }}>
+            <span key={ms} style={{ position: 'absolute', left: `${toPct(ms)}%`, fontSize: 9, color: theme.textFaint, fontWeight: 600, transform: 'translateX(-50%)', letterSpacing: '0.04em' }}>
               {label}
             </span>
           ))}
-          <span style={{ position: 'absolute', left: `${todayPct}%`, fontSize: 9, color: '#E8472A', fontWeight: 700, transform: 'translateX(-50%)', top: 0 }}>
+          <span style={{ position: 'absolute', left: `${todayPct}%`, fontSize: 9, color: theme.accent, fontWeight: 700, transform: 'translateX(-50%)', top: 0 }}>
             hoje
           </span>
         </div>
       </div>
 
       {/* Rows */}
-      <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, overflow: 'hidden', background: '#18181B' }}>
+      <div style={{ border: `1px solid ${theme.border}`, borderRadius: theme.radius, overflow: 'hidden', background: theme.bg }}>
         {withDates.map((c, idx) => {
           const startMs  = Number(c.start_date || c.due_date)
           const endMs    = Number(c.due_date)
@@ -74,19 +74,19 @@ export default function MissionGantt({ compact = false, campaigns = [] }) {
           const color    = barColor(c.status)
 
           return (
-            <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', borderBottom: idx < withDates.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none', minHeight: rowH }}>
-              <Link to={`/campaigns/${c.id}`} state={{ name: c.name }} style={{ padding: '10px 12px 10px 14px', borderRight: '1px solid rgba(255,255,255,0.06)', textDecoration: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', borderBottom: idx < withDates.length - 1 ? `1px solid ${theme.border}` : 'none', minHeight: rowH }}>
+              <Link to={`/campaigns/${c.id}`} state={{ name: c.name }} style={{ padding: '10px 12px 10px 14px', borderRight: `1px solid ${theme.border}`, textDecoration: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                  <p style={{ fontSize: 10.5, fontWeight: 600, color: '#F4F4F5', margin: 0, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</p>
+                  <p style={{ fontSize: 10.5, fontWeight: 600, color: theme.text, margin: 0, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</p>
                 </div>
-                {!compact && c.status && <p style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.3)', margin: '2px 0 0 10px' }}>{c.status}</p>}
+                {!compact && c.status && <p style={{ fontSize: 9.5, color: theme.textFaint, margin: '2px 0 0 10px' }}>{c.status}</p>}
               </Link>
 
               <div style={{ position: 'relative', padding: '10px 8px', display: 'flex', alignItems: 'center' }}>
-                <div style={{ position: 'absolute', top: 0, bottom: 0, left: `calc(${todayPct}% + 8px)`, width: 1, background: 'rgba(232,71,42,0.4)', zIndex: 2, pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', top: 0, bottom: 0, left: `calc(${todayPct}% + 8px)`, width: 1, background: theme.accentBorder, zIndex: 2, pointerEvents: 'none' }} />
                 <div style={{ position: 'relative', width: '100%', height: 20 }}>
-                  <div style={{ position: 'absolute', left: `${leftPct}%`, width: `${widthPct}%`, height: '100%', background: color, borderRadius: 5, opacity: 0.85, display: 'flex', alignItems: 'center', paddingLeft: 7, overflow: 'hidden', minWidth: 4 }}>
+                  <div style={{ position: 'absolute', left: `${leftPct}%`, width: `${widthPct}%`, height: '100%', background: color, borderRadius: 5, display: 'flex', alignItems: 'center', paddingLeft: 7, overflow: 'hidden', minWidth: 4 }}>
                     {widthPct > 6 && (
                       <span style={{ fontSize: 8.5, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '0.03em' }}>
                         {fmtDay(startMs)}{endMs !== startMs ? ` → ${fmtDay(endMs)}` : ''}
@@ -102,10 +102,10 @@ export default function MissionGantt({ compact = false, campaigns = [] }) {
 
       {/* Legend */}
       <div style={{ display: 'flex', gap: 18, marginTop: 12, flexWrap: 'wrap' }}>
-        {[['#E24B4A', 'Crítico'], ['#EF9F27', 'Em risco'], ['#22C55E', 'On track'], ['#E8472A', 'Hoje']].map(([color, label]) => (
+        {[[theme.danger, 'Crítico'], [theme.warning, 'Em risco'], [theme.success, 'On track'], [theme.accent, 'Hoje']].map(([color, label]) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: label === 'Hoje' ? 1 : 9, height: label === 'Hoje' ? 12 : 9, background: color, borderRadius: label === 'Hoje' ? 0 : 2, opacity: 0.8 }} />
-            <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>{label}</span>
+            <span style={{ width: label === 'Hoje' ? 1 : 9, height: label === 'Hoje' ? 12 : 9, background: color, borderRadius: label === 'Hoje' ? 0 : 2 }} />
+            <span style={{ fontSize: 9.5, color: theme.textFaint, fontWeight: 500 }}>{label}</span>
           </div>
         ))}
       </div>

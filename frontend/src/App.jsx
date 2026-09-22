@@ -8,6 +8,7 @@ import AlertsPage from './pages/AlertsPage.jsx'
 import CalendarPage from './pages/CalendarPage.jsx'
 import MktPage from './pages/MktPage.jsx'
 import AgentPage from './pages/AgentPage.jsx'
+import { theme } from './theme.js'
 
 function decodeToken(token) {
   try { return JSON.parse(atob(token.split('.')[1])) } catch { return {} }
@@ -17,7 +18,7 @@ function AppShell({ onLogout, userName }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar onLogout={onLogout} userName={userName} alertCount={0} />
-      <main style={{ flex: 1, background: '#0F0F11', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flex: 1, background: theme.bg, overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div style={{ flex: 1 }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -28,10 +29,10 @@ function AppShell({ onLogout, userName }) {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
-        <footer style={{ padding: '10px 44px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ color: '#E8472A', fontWeight: 700, fontSize: 10, letterSpacing: '-0.01em' }}>The Launchpad</span>
-          <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 10 }}>·</span>
-          <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontStyle: 'italic', letterSpacing: '0.01em' }}>where campaigns are tracked, risks are flagged, and execution happens</span>
+        <footer style={{ padding: '10px 44px', borderTop: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: theme.accent, fontWeight: 700, fontSize: 10, letterSpacing: '-0.01em' }}>The Launchpad</span>
+          <span style={{ color: theme.textFaint, fontSize: 10 }}>·</span>
+          <span style={{ color: theme.textFaint, fontSize: 10, fontStyle: 'italic', letterSpacing: '0.01em' }}>where campaigns are tracked, risks are flagged, and execution happens</span>
         </footer>
       </main>
     </div>

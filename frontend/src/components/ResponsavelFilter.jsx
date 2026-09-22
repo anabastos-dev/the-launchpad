@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { theme } from '../theme.js'
 
 const TEAMS_KEY = 'launchpad_saved_teams'
 
@@ -66,10 +67,10 @@ export default function ResponsavelFilter({ people, selected, onChange }) {
         onClick={() => setOpen(o => !o)}
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          fontSize: 13, fontWeight: 500, padding: '7px 12px', borderRadius: 8,
-          border: `1px solid ${selected.size > 0 ? 'rgba(124,58,237,0.4)' : 'rgba(255,255,255,0.12)'}`,
-          background: selected.size > 0 ? 'rgba(124,58,237,0.12)' : 'rgba(255,255,255,0.04)',
-          color: selected.size > 0 ? '#C4B5FD' : 'rgba(255,255,255,0.6)',
+          fontSize: 13, fontWeight: 500, padding: '7px 12px', borderRadius: theme.radiusSm,
+          border: `1px solid ${selected.size > 0 ? theme.accentBorder : theme.border}`,
+          background: selected.size > 0 ? theme.accentBg : theme.bgSubtle,
+          color: selected.size > 0 ? theme.accent : theme.textMuted,
           cursor: 'pointer',
         }}
       >
@@ -81,23 +82,23 @@ export default function ResponsavelFilter({ people, selected, onChange }) {
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50,
-          width: 280, background: '#1C1C1F', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 12, boxShadow: '0 16px 40px rgba(0,0,0,0.5)', overflow: 'hidden',
+          width: 280, background: theme.bg, border: `1px solid ${theme.border}`,
+          borderRadius: 12, boxShadow: '0 16px 40px rgba(47,46,43,0.18)', overflow: 'hidden',
         }}>
           {/* Saved teams */}
           {Object.keys(teams).length > 0 && (
-            <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>Meus times</p>
+            <div style={{ padding: '10px 12px', borderBottom: `1px solid ${theme.border}` }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: theme.textFaint, letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 8px' }}>Meus times</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {Object.entries(teams).map(([name, names]) => (
                   <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <button
                       onClick={() => applyTeam(names)}
-                      style={{ flex: 1, textAlign: 'left', fontSize: 12.5, fontWeight: 500, color: '#F4F4F5', background: 'rgba(255,255,255,0.04)', border: 'none', borderRadius: 6, padding: '6px 9px', cursor: 'pointer' }}
+                      style={{ flex: 1, textAlign: 'left', fontSize: 12.5, fontWeight: 500, color: theme.text, background: theme.bgSubtle, border: 'none', borderRadius: 6, padding: '6px 9px', cursor: 'pointer' }}
                     >
-                      {name} <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 400 }}>({names.length})</span>
+                      {name} <span style={{ color: theme.textFaint, fontWeight: 400 }}>({names.length})</span>
                     </button>
-                    <button onClick={() => handleDeleteTeam(name)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 13, padding: '0 4px' }}>×</button>
+                    <button onClick={() => handleDeleteTeam(name)} style={{ background: 'none', border: 'none', color: theme.textFaint, cursor: 'pointer', fontSize: 13, padding: '0 4px' }}>×</button>
                   </div>
                 ))}
               </div>
@@ -110,45 +111,45 @@ export default function ResponsavelFilter({ people, selected, onChange }) {
               value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Buscar pessoa…"
               autoFocus
-              style={{ width: '100%', boxSizing: 'border-box', fontSize: 13, padding: '7px 10px', borderRadius: 7, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#F4F4F5', outline: 'none' }}
+              style={{ width: '100%', boxSizing: 'border-box', fontSize: 13, padding: '7px 10px', borderRadius: 7, border: `1px solid ${theme.border}`, background: theme.bgSubtle, color: theme.text, outline: 'none' }}
             />
           </div>
 
           {/* People checklist */}
           <div style={{ maxHeight: 220, overflowY: 'auto', padding: '2px 6px' }}>
             {filtered.length === 0 && (
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', padding: '10px 8px' }}>Nada encontrado</p>
+              <p style={{ fontSize: 12, color: theme.textFaint, padding: '10px 8px' }}>Nada encontrado</p>
             )}
             {filtered.map(name => (
-              <label key={name} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '6px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#F4F4F5' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              <label key={name} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '6px 8px', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: theme.text }}
+                onMouseEnter={e => e.currentTarget.style.background = theme.bgHover}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <input type="checkbox" checked={selected.has(name)} onChange={() => toggle(name)} style={{ width: 14, height: 14, accentColor: '#7C3AED' }} />
+                <input type="checkbox" checked={selected.has(name)} onChange={() => toggle(name)} style={{ width: 14, height: 14, accentColor: theme.accent }} />
                 {name}
               </label>
             ))}
           </div>
 
           {/* Save as team */}
-          <div style={{ padding: '10px 12px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', gap: 6 }}>
+          <div style={{ padding: '10px 12px', borderTop: `1px solid ${theme.border}`, display: 'flex', gap: 6 }}>
             <input
               value={newTeamName} onChange={e => setNewTeamName(e.target.value)}
               placeholder="Nome do time p/ salvar"
               onKeyDown={e => e.key === 'Enter' && handleSaveTeam()}
-              style={{ flex: 1, fontSize: 12, padding: '6px 9px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#F4F4F5', outline: 'none' }}
+              style={{ flex: 1, fontSize: 12, padding: '6px 9px', borderRadius: 6, border: `1px solid ${theme.border}`, background: theme.bgSubtle, color: theme.text, outline: 'none' }}
             />
             <button
               onClick={handleSaveTeam}
               disabled={!newTeamName.trim() || selected.size === 0}
-              style={{ fontSize: 12, fontWeight: 600, padding: '6px 10px', borderRadius: 6, border: 'none', background: '#7C3AED', color: '#fff', cursor: 'pointer', opacity: (!newTeamName.trim() || selected.size === 0) ? 0.4 : 1 }}
+              style={{ fontSize: 12, fontWeight: 600, padding: '6px 10px', borderRadius: 6, border: 'none', background: theme.text, color: '#fff', cursor: 'pointer', opacity: (!newTeamName.trim() || selected.size === 0) ? 0.4 : 1 }}
             >
               Salvar
             </button>
           </div>
 
           {selected.size > 0 && (
-            <button onClick={() => onChange(new Set())} style={{ width: '100%', fontSize: 12, color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none', borderTop: '1px solid rgba(255,255,255,0.07)', padding: '9px 0', cursor: 'pointer' }}>
+            <button onClick={() => onChange(new Set())} style={{ width: '100%', fontSize: 12, color: theme.textMuted, background: 'none', border: 'none', borderTop: `1px solid ${theme.border}`, padding: '9px 0', cursor: 'pointer' }}>
               Limpar seleção
             </button>
           )}

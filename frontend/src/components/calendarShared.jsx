@@ -3,6 +3,7 @@
 // fixes and the notification opt-in don't drift between the two.
 import { useState } from 'react'
 import { api } from '../api.js'
+import { theme } from '../theme.js'
 
 export const DAYS_OF_WEEK = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
@@ -38,15 +39,15 @@ export function getEventsForDay(events, year, month, day) {
 
 export function Legend() {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', margin: '0 0 24px', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', margin: '0 0 24px', padding: '10px 14px', background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radius }}>
       {EVENT_TYPES.map(t => (
-        <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+        <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: theme.textMuted, fontWeight: 600 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: TYPE_COLORS[t], display: 'inline-block' }} />
           {t}
         </span>
       ))}
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: 'rgba(255,255,255,0.3)', fontWeight: 600, marginLeft: 'auto' }}>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'inline-block' }} />
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: theme.textFaint, fontWeight: 600, marginLeft: 'auto' }}>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: theme.borderStrong, display: 'inline-block' }} />
         Cancelado
       </span>
     </div>
@@ -69,10 +70,10 @@ export function MonthGrid({ year, month, label, events, onEventClick, onDayClick
 
   return (
     <div>
-      <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 12px' }}>{label}</p>
+      <p style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 12px' }}>{label}</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4, gap: 3 }}>
         {DAYS_OF_WEEK.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em', padding: '4px 0' }}>{d}</div>
+          <div key={d} style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 700, color: theme.textFaint, letterSpacing: '0.06em', padding: '4px 0' }}>{d}</div>
         ))}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
@@ -87,24 +88,23 @@ export function MonthGrid({ year, month, label, events, onEventClick, onDayClick
               id={todayDay ? 'calendar-today-cell' : undefined}
               onClick={onDayClick ? () => onDayClick(year, month, day) : undefined}
               style={{
-                minHeight: 84, borderRadius: 8,
-                border: todayDay ? '1.5px solid #E8472A' : '1px solid rgba(255,255,255,0.07)',
-                background: todayDay ? 'rgba(232,71,42,0.1)' : weekend ? '#141416' : '#18181B',
+                minHeight: 84, borderRadius: theme.radiusSm,
+                border: todayDay ? `1.5px solid ${theme.accent}` : `1px solid ${theme.border}`,
+                background: todayDay ? theme.accentBg : weekend ? theme.bgSubtle : theme.bg,
                 padding: '6px 7px', position: 'relative', overflow: 'hidden',
                 cursor: onDayClick ? 'pointer' : 'default',
-                transition: 'border-color 0.1s',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 11, fontWeight: todayDay ? 800 : 500, color: todayDay ? '#E8472A' : weekend ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.55)', lineHeight: 1 }}>
+                <span style={{ fontSize: 11, fontWeight: todayDay ? 800 : 500, color: todayDay ? theme.accent : weekend ? theme.textFaint : theme.textMuted, lineHeight: 1 }}>
                   {day}
                 </span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {dayEvs.map(ev => {
-                  const color     = ev.color || TYPE_COLORS[ev.type] || '#71717A'
+                  const color     = ev.color || TYPE_COLORS[ev.type] || theme.textMuted
                   const cancelled = ev.status === 'Cancelado'
-                  const dim = cancelled ? 0.35 : 1
+                  const dim = cancelled ? 0.4 : 1
 
                   return (
                     <div
@@ -120,7 +120,7 @@ export function MonthGrid({ year, month, label, events, onEventClick, onDayClick
                 })}
               </div>
               {todayDay && (
-                <div style={{ position: 'absolute', bottom: 4, right: 5, fontSize: 7.5, fontWeight: 800, color: '#E8472A', letterSpacing: '0.08em', textTransform: 'uppercase' }}>hoje</div>
+                <div style={{ position: 'absolute', bottom: 4, right: 5, fontSize: 7.5, fontWeight: 800, color: theme.accent, letterSpacing: '0.08em', textTransform: 'uppercase' }}>hoje</div>
               )}
             </div>
           )
@@ -148,27 +148,27 @@ export function SubscribeModal({ onClose }) {
     }
   }
 
-  const inputStyle = { border: '1px solid #E4E4E7', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#18181B', outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }
+  const inputStyle = { border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '9px 12px', fontSize: 13, color: theme.text, outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(15,15,15,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div style={{ background: '#fff', borderRadius: 14, padding: '28px 32px', width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+      <div style={{ background: theme.bg, borderRadius: 14, padding: '28px 32px', width: 380, border: `1px solid ${theme.border}`, boxShadow: '0 20px 50px rgba(47,46,43,0.14)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
-            <p style={{ fontSize: 10, fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 4px' }}>Alertas do calendário</p>
-            <p style={{ fontSize: 15, fontWeight: 700, color: '#18181B', margin: 0, letterSpacing: '-0.02em' }}>Receber mudanças e alertas</p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: theme.textFaint, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 4px' }}>Alertas do calendário</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: theme.text, margin: 0, letterSpacing: '-0.02em' }}>Receber mudanças e alertas</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A1A1AA', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.textFaint, fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
         </div>
 
         {status === 'done' ? (
-          <p style={{ fontSize: 13, color: '#22C55E', fontWeight: 600 }}>✓ Inscrito! {errMsg} Você vai receber no ClickUp quando uma campanha mudar de data ou for cancelada.</p>
+          <p style={{ fontSize: 13, color: theme.success, fontWeight: 600 }}>✓ Inscrito! {errMsg} Você vai receber no ClickUp quando uma campanha mudar de data ou for cancelada.</p>
         ) : (
           <>
-            <p style={{ fontSize: 12, color: '#71717A', margin: '0 0 14px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 12, color: theme.textMuted, margin: '0 0 14px', lineHeight: 1.5 }}>
               Coloque seu e-mail do ClickUp. Você recebe um alerta sempre que a <strong>data</strong> de uma campanha mudar, ou se ela for <strong>cancelada</strong> — direto no card, no ClickUp. Você vira observador (watcher), sem ficar responsável por nenhuma tarefa.
             </p>
             <input
@@ -177,11 +177,11 @@ export function SubscribeModal({ onClose }) {
               onKeyDown={e => e.key === 'Enter' && handleSubscribe()}
               style={inputStyle} autoFocus
             />
-            {status === 'error' && <p style={{ fontSize: 11, color: '#E24B4A', margin: '8px 0 0' }}>{errMsg}</p>}
+            {status === 'error' && <p style={{ fontSize: 11, color: theme.danger, margin: '8px 0 0' }}>{errMsg}</p>}
             <button
               onClick={handleSubscribe}
               disabled={status === 'loading'}
-              style={{ width: '100%', marginTop: 14, border: 'none', background: '#18181B', borderRadius: 8, padding: '10px 0', fontSize: 12, fontWeight: 600, color: '#fff', cursor: 'pointer', opacity: status === 'loading' ? 0.6 : 1 }}
+              style={{ width: '100%', marginTop: 14, border: 'none', background: theme.text, borderRadius: theme.radiusSm, padding: '10px 0', fontSize: 12, fontWeight: 600, color: '#fff', cursor: 'pointer', opacity: status === 'loading' ? 0.6 : 1 }}
             >
               {status === 'loading' ? 'Inscrevendo…' : 'Quero receber'}
             </button>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
 import { EVENT_TYPES, TYPE_COLORS, Legend, MonthGrid, SubscribeModal } from '../components/calendarShared.jsx'
+import { theme } from '../theme.js'
 
 const PALETTE = [
   '#E8472A', '#EF9F27', '#22C55E', '#185FA5', '#7C3AED',
@@ -313,24 +314,24 @@ export default function CalendarPage() {
     <div style={{ padding: '40px 44px 64px', maxWidth: 1100 }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
-          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.04em', color: '#F4F4F5', margin: '0 0 6px', lineHeight: 1 }}>Calendário Editorial</h1>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: 0 }}>
+          <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em', color: theme.text, margin: '0 0 6px', lineHeight: 1 }}>Calendário Editorial</h1>
+          <p style={{ fontSize: 12, color: theme.textMuted, margin: 0 }}>
             {events.length} evento{events.length !== 1 ? 's' : ''} · clique em um dia para adicionar
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => setSubscribeOpen(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#A1A1AA', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
           >🔔 Receber mudanças e alertas</button>
           <button
             onClick={handleSync}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#A1A1AA', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
           >{syncMsg || '↑ Publicar'}</button>
           <button
             onClick={() => setModal({})}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#E8472A', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.accent, border: 'none', borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
           >
           + Novo evento
           </button>
@@ -356,12 +357,12 @@ export default function CalendarPage() {
           {EVENT_TYPES.map(t => (
             <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{ width: 10, height: 10, background: TYPE_COLORS[t], borderRadius: 2 }} />
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>{t}</span>
+              <span style={{ fontSize: 10, color: theme.textFaint, fontWeight: 500 }}>{t}</span>
             </div>
           ))}
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <span style={{ fontSize: 10 }}>⚽</span>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 500 }}>Copa do Brasil</span>
+            <span style={{ fontSize: 10, color: theme.textFaint, fontWeight: 500 }}>Copa do Brasil</span>
           </div>
         </div>
       </div>

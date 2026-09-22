@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
 import { TYPE_COLORS, Legend, MonthGrid, SubscribeModal } from '../components/calendarShared.jsx'
+import { theme } from '../theme.js'
 
 const EVENTS_KEY = 'launchpad_calendar_events'
 
@@ -99,21 +100,21 @@ export default function MktPage() {
   for (let m = currentMonth; m <= 12; m++) months.push(m)
 
   return (
-    <div style={{ background: '#0F0F11', minHeight: '100vh' }}>
+    <div style={{ background: theme.bg, minHeight: '100vh' }}>
     <div style={{ padding: '40px 44px 64px', maxWidth: 1100 }}>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
-          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.04em', color: '#F4F4F5', margin: '0 0 6px', lineHeight: 1 }}>Calendário Editorial</h1>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', margin: 0 }}>
+          <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
+          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em', color: theme.text, margin: '0 0 6px', lineHeight: 1 }}>Calendário Editorial</h1>
+          <p style={{ fontSize: 12, color: theme.textMuted, margin: 0 }}>
             {events.length} evento{events.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={() => setSubscribeOpen(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#A1A1AA', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
         >🔔 Receber mudanças e alertas</button>
       </div>
 

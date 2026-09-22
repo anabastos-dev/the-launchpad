@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 import ResponsavelFilter from '../components/ResponsavelFilter.jsx'
 import RiskTimeline from '../components/RiskTimeline.jsx'
+import { theme } from '../theme.js'
 
 const FASE_ORDER = ['Kickoff', 'Estratégia', 'Produção', 'Pré-lançamento', 'Live', 'Retrospectiva']
 
@@ -117,19 +118,18 @@ const EXT_ICON = (
 
 function AlertRow({ alert }) {
   const isHigh = alert.severidade === 'HIGH'
-  const accentColor = isHigh ? '#F87171' : '#FBBF24'
-  const borderColor = isHigh ? 'rgba(248,113,113,0.18)' : 'rgba(251,191,36,0.18)'
-  const leftBorder  = isHigh ? '#E24B4A' : '#F59E0B'
-  const tagBg       = isHigh ? 'rgba(248,113,113,0.12)' : 'rgba(251,191,36,0.12)'
-  const tagBorder   = isHigh ? 'rgba(248,113,113,0.3)' : 'rgba(251,191,36,0.3)'
+  const accentColor = isHigh ? theme.danger : theme.warning
+  const borderColor = isHigh ? 'rgba(224,62,62,0.25)' : 'rgba(217,115,13,0.25)'
+  const tagBg       = isHigh ? theme.dangerBg : theme.warningBg
+  const tagBorder   = isHigh ? 'rgba(224,62,62,0.3)' : 'rgba(217,115,13,0.3)'
   const label       = isHigh ? 'Crítico' : 'Em risco'
 
   return (
     <div style={{
-      background: '#18181B',
+      background: theme.bg,
       border: `1px solid ${borderColor}`,
-      borderLeft: `3px solid ${leftBorder}`,
-      borderRadius: 10, padding: '13px 16px',
+      borderLeft: `3px solid ${accentColor}`,
+      borderRadius: theme.radius, padding: '13px 16px',
       display: 'flex', alignItems: 'flex-start', gap: 12,
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -142,28 +142,28 @@ function AlertRow({ alert }) {
             {label}
           </span>
           <Link to={`/campaigns/${alert.campanhaId}`}
-            style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontWeight: 500 }}
-            onMouseEnter={e => e.currentTarget.style.color = '#E8472A'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>
+            style={{ fontSize: 11.5, color: theme.textFaint, textDecoration: 'none', fontWeight: 500 }}
+            onMouseEnter={e => e.currentTarget.style.color = theme.accent}
+            onMouseLeave={e => e.currentTarget.style.color = theme.textFaint}>
             {alert.campanha}
           </Link>
           {alert.responsavel && (
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 99 }}>
+            <span style={{ fontSize: 11, color: theme.textMuted, background: theme.bgSubtle, padding: '2px 8px', borderRadius: 99 }}>
               {alert.responsavel}
             </span>
           )}
         </div>
-        <p style={{ fontSize: 14.5, fontWeight: 600, color: '#F4F4F5', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={alert.tarefa}>{alert.tarefa}</p>
-        <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', margin: 0 }}>
+        <p style={{ fontSize: 14.5, fontWeight: 600, color: theme.text, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={alert.tarefa}>{alert.tarefa}</p>
+        <p style={{ fontSize: 12.5, color: theme.textMuted, margin: 0 }}>
           {alert.mensagem}{alert.fase ? ` · ${alert.fase}` : ''}{alert.canal ? ` · ${alert.canal}` : ''}
         </p>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         {alert.due_date && <span style={{ fontSize: 12, color: accentColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtDate(alert.due_date)}</span>}
         {alert.url && (
-          <a href={alert.url} target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.25)', display: 'flex' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#E8472A'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}>
+          <a href={alert.url} target="_blank" rel="noopener noreferrer" style={{ color: theme.textFaint, display: 'flex' }}
+            onMouseEnter={e => e.currentTarget.style.color = theme.accent}
+            onMouseLeave={e => e.currentTarget.style.color = theme.textFaint}>
             {EXT_ICON}
           </a>
         )}
@@ -175,45 +175,45 @@ function AlertRow({ alert }) {
 function OpportunityRow({ opp }) {
   return (
     <div style={{
-      background: '#18181B',
-      border: '1px solid rgba(74,222,128,0.15)',
-      borderLeft: '3px solid #22C55E',
-      borderRadius: 10, padding: '13px 16px',
+      background: theme.bg,
+      border: '1px solid rgba(47,158,68,0.22)',
+      borderLeft: `3px solid ${theme.success}`,
+      borderRadius: theme.radius, padding: '13px 16px',
       display: 'flex', alignItems: 'flex-start', gap: 12,
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#4ADE80', background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)', padding: '3px 8px', borderRadius: 99 }}>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: theme.success, background: theme.successBg, border: '1px solid rgba(47,158,68,0.3)', padding: '3px 8px', borderRadius: 99 }}>
             Opportunity
           </span>
           <Link to={`/campaigns/${opp.campanhaId}`}
-            style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', textDecoration: 'none', fontWeight: 500 }}
-            onMouseEnter={e => e.currentTarget.style.color = '#22C55E'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}>
+            style={{ fontSize: 11.5, color: theme.textFaint, textDecoration: 'none', fontWeight: 500 }}
+            onMouseEnter={e => e.currentTarget.style.color = theme.success}
+            onMouseLeave={e => e.currentTarget.style.color = theme.textFaint}>
             {opp.campanha}
           </Link>
           {opp.responsavel && (
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.06)', padding: '2px 8px', borderRadius: 99 }}>
+            <span style={{ fontSize: 11, color: theme.textMuted, background: theme.bgSubtle, padding: '2px 8px', borderRadius: 99 }}>
               {opp.responsavel}
             </span>
           )}
         </div>
-        <p style={{ fontSize: 14.5, fontWeight: 600, color: '#F4F4F5', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={opp.tarefa}>{opp.tarefa}</p>
-        <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', margin: 0 }}>
+        <p style={{ fontSize: 14.5, fontWeight: 600, color: theme.text, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={opp.tarefa}>{opp.tarefa}</p>
+        <p style={{ fontSize: 12.5, color: theme.textMuted, margin: 0 }}>
           {opp.mensagem}{opp.fase ? ` · ${opp.fase}` : ''}
         </p>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         {opp.start_date && (
           <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.3)', margin: '0 0 1px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>início</p>
-            <span style={{ fontSize: 12, color: '#4ADE80', fontWeight: 700 }}>{fmtDate(opp.start_date)}</span>
+            <p style={{ fontSize: 9.5, color: theme.textFaint, margin: '0 0 1px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>início</p>
+            <span style={{ fontSize: 12, color: theme.success, fontWeight: 700 }}>{fmtDate(opp.start_date)}</span>
           </div>
         )}
         {opp.url && (
-          <a href={opp.url} target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.25)', display: 'flex' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#22C55E'}
-            onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}>
+          <a href={opp.url} target="_blank" rel="noopener noreferrer" style={{ color: theme.textFaint, display: 'flex' }}
+            onMouseEnter={e => e.currentTarget.style.color = theme.success}
+            onMouseLeave={e => e.currentTarget.style.color = theme.textFaint}>
             {EXT_ICON}
           </a>
         )}
@@ -280,22 +280,22 @@ export default function AlertsPage() {
 
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', margin: '0 0 10px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
+        <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 10px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 12 }}>
-          <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.04em', color: '#F4F4F5', margin: 0, lineHeight: 1 }}>Risk Signals</h1>
+          <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.03em', color: theme.text, margin: 0, lineHeight: 1 }}>Risk Signals</h1>
           {!loading && !error && (
             <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: '#F87171', fontWeight: 600 }}>{high.length} crítico{high.length !== 1 ? 's' : ''}</span>
-              <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 13 }}>·</span>
-              <span style={{ fontSize: 13, color: '#FBBF24', fontWeight: 600 }}>{medium.length} vencem hoje</span>
-              <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 13 }}>·</span>
-              <span style={{ fontSize: 13, color: '#4ADE80', fontWeight: 600 }}>{visOpps.length} opportunit{visOpps.length !== 1 ? 'ies' : 'y'}</span>
+              <span style={{ fontSize: 13, color: theme.danger, fontWeight: 600 }}>{high.length} crítico{high.length !== 1 ? 's' : ''}</span>
+              <span style={{ color: theme.border, fontSize: 13 }}>·</span>
+              <span style={{ fontSize: 13, color: theme.warning, fontWeight: 600 }}>{medium.length} vencem hoje</span>
+              <span style={{ color: theme.border, fontSize: 13 }}>·</span>
+              <span style={{ fontSize: 13, color: theme.success, fontWeight: 600 }}>{visOpps.length} opportunit{visOpps.length !== 1 ? 'ies' : 'y'}</span>
             </div>
           )}
-          {loading && <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Carregando…</span>}
-          {error && <span style={{ fontSize: 13, color: '#F87171' }}>{error}</span>}
+          {loading && <span style={{ fontSize: 13, color: theme.textFaint }}>Carregando…</span>}
+          {error && <span style={{ fontSize: 13, color: theme.danger }}>{error}</span>}
         </div>
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.07)' }} />
+        <div style={{ height: 1, background: theme.border }} />
       </div>
 
       {/* Filters row: campaign pills · responsável selector · list/timeline toggle */}
@@ -310,14 +310,13 @@ export default function AlertsPage() {
                     <button key={c.id} onClick={() => setFilter(c.id)} style={{
                       fontSize: 12.5, fontWeight: active ? 600 : 400,
                       padding: '6px 14px', borderRadius: 99,
-                      border: `1px solid ${active ? 'rgba(255,255,255,0.15)' : 'transparent'}`,
-                      background: active ? 'rgba(255,255,255,0.09)' : 'transparent',
-                      color: active ? '#F4F4F5' : 'rgba(255,255,255,0.4)',
+                      border: `1px solid ${active ? theme.borderStrong : 'transparent'}`,
+                      background: active ? theme.bgActive : 'transparent',
+                      color: active ? theme.text : theme.textFaint,
                       cursor: 'pointer',
-                      transition: 'all 0.12s',
                     }}
-                    onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'rgba(255,255,255,0.65)' }}
-                    onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'rgba(255,255,255,0.4)' }}
+                    onMouseEnter={e => { if (!active) e.currentTarget.style.color = theme.textMuted }}
+                    onMouseLeave={e => { if (!active) e.currentTarget.style.color = theme.textFaint }}
                     >
                       {c.name}
                     </button>
@@ -329,12 +328,13 @@ export default function AlertsPage() {
           </div>
 
           {/* Lista / Linha do tempo toggle */}
-          <div style={{ display: 'flex', gap: 3, background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 3 }}>
+          <div style={{ display: 'flex', gap: 3, background: theme.bgSubtle, borderRadius: theme.radiusSm, padding: 3 }}>
             {[['lista', 'Lista'], ['timeline', 'Linha do tempo']].map(([id, label]) => (
               <button key={id} onClick={() => setView(id)} style={{
                 fontSize: 12.5, fontWeight: 600, padding: '6px 13px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                background: view === id ? '#F4F4F5' : 'transparent',
-                color: view === id ? '#0B0C0F' : 'rgba(255,255,255,0.45)',
+                background: view === id ? theme.bg : 'transparent',
+                color: view === id ? theme.text : theme.textMuted,
+                boxShadow: view === id ? `0 1px 2px ${theme.border}` : 'none',
               }}>
                 {label}
               </button>
@@ -345,9 +345,9 @@ export default function AlertsPage() {
 
       {/* Empty state */}
       {!loading && !error && high.length === 0 && medium.length === 0 && visOpps.length === 0 && (
-        <div style={{ background: 'rgba(74,222,128,0.07)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 12, padding: '28px 24px', textAlign: 'center' }}>
-          <p style={{ fontSize: 14.5, fontWeight: 600, color: '#4ADE80', margin: '0 0 4px' }}>Tudo no prazo</p>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: 0 }}>Nenhum sinal de risco detectado{people.size > 0 ? ' para as pessoas selecionadas' : ' nas campanhas ativas'}.</p>
+        <div style={{ background: theme.successBg, border: '1px solid rgba(47,158,68,0.25)', borderRadius: theme.radius + 4, padding: '28px 24px', textAlign: 'center' }}>
+          <p style={{ fontSize: 14.5, fontWeight: 600, color: theme.success, margin: '0 0 4px' }}>Tudo no prazo</p>
+          <p style={{ fontSize: 13, color: theme.textMuted, margin: 0 }}>Nenhum sinal de risco detectado{people.size > 0 ? ' para as pessoas selecionadas' : ' nas campanhas ativas'}.</p>
         </div>
       )}
 
@@ -358,7 +358,7 @@ export default function AlertsPage() {
           {/* Críticos */}
           {high.length > 0 && (
             <section style={{ marginBottom: 36 }}>
-              <SectionLabel color="#E24B4A">Críticos</SectionLabel>
+              <SectionLabel color={theme.danger}>Críticos</SectionLabel>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {high.map(a => <AlertRow key={a.id} alert={a} />)}
               </div>
@@ -368,7 +368,7 @@ export default function AlertsPage() {
           {/* Vencem hoje */}
           {medium.length > 0 && (
             <section style={{ marginBottom: 36 }}>
-              <SectionLabel color="#F59E0B">Vencem hoje</SectionLabel>
+              <SectionLabel color={theme.warning}>Vencem hoje</SectionLabel>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {medium.map(a => <AlertRow key={a.id} alert={a} />)}
               </div>
@@ -378,7 +378,7 @@ export default function AlertsPage() {
           {/* Opportunities */}
           {visOpps.length > 0 && (
             <section>
-              <SectionLabel color="#22C55E">Opportunities · pode adiantar</SectionLabel>
+              <SectionLabel color={theme.success}>Opportunities · pode adiantar</SectionLabel>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {visOpps.map(o => <OpportunityRow key={o.id} opp={o} />)}
               </div>
