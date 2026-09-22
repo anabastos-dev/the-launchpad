@@ -93,6 +93,28 @@ ${playbookNote}
 Responda sempre em português do Brasil. Seja direto e objetivo.`
 }
 
+// POST /api/agent/strategy-chat — a free-form sounding board, separate from the
+// playbook-editing chat, so brainstorming doesn't force a full table regeneration
+router.post('/strategy-chat', async (req, res) => {
+  try {
+    const { messages = [], campaignName = '' } = req.body
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(503).json({ error: 'ANTHROPIC_API_KEY não configurada no backend' })
+    }
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-5',
+      max_tokens: 1024,
+      system: `Você é um parceiro de estratégia de marketing da Minimal Club, ajudando Ana (ou um líder autorizado) a pensar a campanha${campaignName ? ` "${campaignName}"` : ''} antes ou durante a montagem da planilha de tarefas.
+Converse normalmente — sugira narrativas, questione hipóteses, ajude a decidir público, tom, canais. Não gere listas de tarefas nem JSON aqui; isso é feito em outro chat, ao lado. Responda em português do Brasil, direto e objetivo.`,
+      messages,
+    })
+    const text = response.content?.[0]?.text || ''
+    res.json({ message: text })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // POST /api/agent/chat
 router.post('/chat', async (req, res) => {
   try {

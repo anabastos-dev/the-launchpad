@@ -283,28 +283,28 @@ export default function CampaignCreatorPage() {
   const [campaignName, setCampaignName] = useState('')
   const [listLink,     setListLink]     = useState('')
   const [taskList,     setTaskList]     = useState({ campaign: '', grupos: defaultPlaybook() })
+  const [activeTab,    setActiveTab]    = useState('plan') // 'plan' | 'strategy'
   const [messages,     setMessages]     = useState([])
+  const [stratMessages, setStratMessages] = useState([])
   const [input,        setInput]        = useState('')
   const [loading,      setLoading]      = useState(false)
+  const [stratLoading, setStratLoading] = useState(false)
   const [uploading,    setUploading]    = useState(false)
   const [uploadResult, setUploadResult] = useState(null)
   const [members,      setMembers]      = useState([])
   const bottomRef = useRef(null)
   const inputRef  = useRef(null)
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, loading])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, stratMessages, loading, stratLoading, activeTab])
   useEffect(() => { setTaskList(prev => ({ ...prev, campaign: campaignName })) }, [campaignName])
   useEffect(() => { api.getTeamMembers().then(setMembers).catch(() => {}) }, [])
 
   const listId = parseListId(listLink)
   const sortedMembers = [...members].filter(m => m.name).sort((a, b) => a.name.localeCompare(b.name))
 
-  async function send() {
-    const text = input.trim()
-    if (!text || loading) return
+  async function sendPlan(text) {
     const newMessages = [...messages, { role: 'user', content: text }]
     setMessages(newMessages)
-    setInput('')
     setLoading(true)
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 55000) // backend allows up to 60s
@@ -327,6 +327,36 @@ export default function CampaignCreatorPage() {
       setLoading(false)
       inputRef.current?.focus()
     }
+  }
+
+  async function sendStrategy(text) {
+    const newMessages = [...stratMessages, { role: 'user', content: text }]
+    setStratMessages(newMessages)
+    setStratLoading(true)
+    try {
+      const res = await fetch('/api/agent/strategy-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('minimal_token')}` },
+        body: JSON.stringify({ messages: newMessages, campaignName }),
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setStratMessages(prev => [...prev, { role: 'assistant', content: data.message }])
+    } catch (err) {
+      setStratMessages(prev => [...prev, { role: 'assistant', content: `Erro: ${err.message}` }])
+    } finally {
+      setStratLoading(false)
+      inputRef.current?.focus()
+    }
+  }
+
+  function send() {
+    const text = input.trim()
+    const busy = activeTab === 'plan' ? loading : stratLoading
+    if (!text || busy) return
+    setInput('')
+    if (activeTab === 'plan') sendPlan(text)
+    else sendStrategy(text)
   }
 
   async function handleUpload() {
@@ -371,47 +401,86 @@ export default function CampaignCreatorPage() {
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 8px' }}>
-          {messages.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px 24px' }}>
-              <div style={{ fontSize: 24, marginBottom: 10 }}>✦</div>
-              <p style={{ color: theme.textFaint, fontSize: 13, lineHeight: 1.6 }}>
-                Já carreguei um playbook padrão na prévia ao lado.<br />
-                Manda o briefing da campanha — texto, resumo de PDF, o que tiver — e eu ajusto responsáveis, datas e grupos.<br />
-                Você também pode editar a tabela direto, a qualquer momento.
-              </p>
-            </div>
-          )}
-          {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
-          {loading && (
-            <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
-              <div style={{ background: theme.bgSubtle, borderRadius: '4px 14px 14px 14px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                  {[0, 1, 2].map(i => (
-                    <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: theme.accent, animation: `bounce 1s ${i * 0.15}s infinite` }} />
-                  ))}
-                </div>
-                <span style={{ fontSize: 11.5, color: theme.textFaint }}>ajustando o playbook — pode levar até 30s</span>
-              </div>
-            </div>
-          )}
-          <div ref={bottomRef} />
+        {/* Tabs: playbook-editing chat vs free strategy sounding board */}
+        <div style={{ display: 'flex', gap: 3, background: theme.bgSubtle, borderRadius: 8, padding: 3, margin: '0 20px 0', flexShrink: 0 }}>
+          {[['plan', '📋 Planejamento'], ['strategy', '💡 Estratégia']].map(([id, label]) => (
+            <button key={id} onClick={() => setActiveTab(id)} style={{
+              flex: 1, fontSize: 12, fontWeight: 600, padding: '7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+              background: activeTab === id ? theme.bg : 'transparent',
+              color: activeTab === id ? theme.text : theme.textMuted,
+              boxShadow: activeTab === id ? `0 1px 2px ${theme.border}` : 'none',
+            }}>{label}</button>
+          ))}
         </div>
+
+        {activeTab === 'plan' ? (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '14px 20px 8px' }}>
+            {messages.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px 24px' }}>
+                <div style={{ fontSize: 24, marginBottom: 10 }}>✦</div>
+                <p style={{ color: theme.textFaint, fontSize: 13, lineHeight: 1.6 }}>
+                  Já carreguei um playbook padrão na prévia ao lado.<br />
+                  Manda o briefing da campanha — texto, resumo de PDF, o que tiver — e eu ajusto responsáveis, datas e grupos.<br />
+                  Você também pode editar a tabela direto, a qualquer momento.
+                </p>
+              </div>
+            )}
+            {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
+            {loading && (
+              <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
+                <div style={{ background: theme.bgSubtle, borderRadius: '4px 14px 14px 14px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                    {[0, 1, 2].map(i => (
+                      <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: theme.accent, animation: `bounce 1s ${i * 0.15}s infinite` }} />
+                    ))}
+                  </div>
+                  <span style={{ fontSize: 11.5, color: theme.textFaint }}>ajustando o playbook — pode levar até 30s</span>
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        ) : (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '14px 20px 8px' }}>
+            {stratMessages.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px 24px' }}>
+                <div style={{ fontSize: 24, marginBottom: 10 }}>💡</div>
+                <p style={{ color: theme.textFaint, fontSize: 13, lineHeight: 1.6 }}>
+                  Espaço livre pra pensar a campanha com o Claude — narrativa, público, tom, canais.<br />
+                  Não toca na planilha; quando fechar a ideia, volta pra aba Planejamento pra ajustar as tarefas.
+                </p>
+              </div>
+            )}
+            {stratMessages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
+            {stratLoading && (
+              <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
+                <div style={{ background: theme.bgSubtle, borderRadius: '4px 14px 14px 14px', padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                    {[0, 1, 2].map(i => (
+                      <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: theme.accent, animation: `bounce 1s ${i * 0.15}s infinite` }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        )}
 
         <div style={{ padding: '12px 16px 16px', borderTop: `1px solid ${theme.border}`, flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
             <textarea
               ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-              placeholder="Cole o briefing ou responda o agente…" rows={3}
+              placeholder={activeTab === 'plan' ? 'Cole o briefing ou responda o agente…' : 'Pergunta ou ideia pra discutir…'} rows={3}
               style={{ flex: 1, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: 10, padding: '10px 12px', color: theme.text, fontSize: 13, resize: 'none', outline: 'none', lineHeight: 1.5, fontFamily: 'inherit' }}
             />
             <button
-              onClick={send} disabled={loading || !input.trim()}
+              onClick={send} disabled={(activeTab === 'plan' ? loading : stratLoading) || !input.trim()}
               style={{
-                background: loading || !input.trim() ? 'rgba(232,71,42,0.3)' : theme.accent, color: '#fff', border: 'none', borderRadius: 10,
+                background: (activeTab === 'plan' ? loading : stratLoading) || !input.trim() ? 'rgba(232,71,42,0.3)' : theme.accent, color: '#fff', border: 'none', borderRadius: 10,
                 width: 42, height: 42, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: loading || !input.trim() ? 'not-allowed' : 'pointer', fontSize: 18,
+                cursor: (activeTab === 'plan' ? loading : stratLoading) || !input.trim() ? 'not-allowed' : 'pointer', fontSize: 18,
               }}
             >↑</button>
           </div>
