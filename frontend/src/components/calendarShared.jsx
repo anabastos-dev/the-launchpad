@@ -36,16 +36,6 @@ export function getEventsForDay(events, year, month, day) {
   })
 }
 
-// A multi-day campaign repeating its full name on every cell turns into noise
-// (e.g. Black Friday spanning all of November). Only the day it actually
-// starts gets the full pill; every other day in its span gets a thin
-// same-color continuation strip so the run is still visible at a glance.
-export function isFirstDayOfEvent(ev, year, month, day) {
-  if (!ev.start_date) return true
-  const s = new Date(Number(ev.start_date))
-  return s.getFullYear() === year && s.getMonth() + 1 === month && s.getDate() === day
-}
-
 export function Legend() {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', margin: '0 0 24px', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10 }}>
@@ -112,21 +102,10 @@ export function MonthGrid({ year, month, label, events, onEventClick, onDayClick
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {dayEvs.map(ev => {
-                  const color      = ev.color || TYPE_COLORS[ev.type] || '#71717A'
-                  const cancelled  = ev.status === 'Cancelado'
-                  const isFirstDay = isFirstDayOfEvent(ev, year, month, day)
+                  const color     = ev.color || TYPE_COLORS[ev.type] || '#71717A'
+                  const cancelled = ev.status === 'Cancelado'
                   const dim = cancelled ? 0.35 : 1
 
-                  if (!isFirstDay) {
-                    return (
-                      <div
-                        key={ev.id}
-                        onClick={e => { e.stopPropagation(); onEventClick(ev) }}
-                        title={ev.name}
-                        style={{ background: color, opacity: 0.55 * dim, borderRadius: 3, height: 18, cursor: 'pointer' }}
-                      />
-                    )
-                  }
                   return (
                     <div
                       key={ev.id}
