@@ -169,7 +169,7 @@ export function SubscribeModal({ onClose }) {
         ) : (
           <>
             <p style={{ fontSize: 12, color: theme.textMuted, margin: '0 0 14px', lineHeight: 1.5 }}>
-              Coloque seu e-mail do ClickUp. Você recebe um alerta sempre que a <strong>data</strong> de uma campanha mudar, ou se ela for <strong>cancelada</strong> — direto no card, no ClickUp. Você vira observador (watcher), sem ficar responsável por nenhuma tarefa.
+              Coloque seu e-mail do ClickUp. Você recebe um alerta sempre que a data de uma campanha mudar, se uma nova campanha for criada ou for cancelada.
             </p>
             <input
               value={email} onChange={e => setEmail(e.target.value)}
