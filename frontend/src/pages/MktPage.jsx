@@ -14,6 +14,7 @@ export default function MktPage() {
   const [events,   setEvents]   = useState(loadEvents)
   const [selected, setSelected] = useState(null)
   const [subscribeOpen, setSubscribeOpen] = useState(false)
+  const [showPast, setShowPast] = useState(false)
 
   useEffect(() => {
     api.getEvents().then(setEvents).catch(() => setEvents(loadEvents()))
@@ -27,11 +28,11 @@ export default function MktPage() {
   const today = new Date()
   const year  = today.getFullYear()
 
-  // Months from current through December
+  // Months from current through December — or from Janeiro when showing past campaigns
   const currentMonth = today.getMonth() + 1
   const monthLabels  = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
   const months = []
-  for (let m = currentMonth; m <= 12; m++) months.push(m)
+  for (let m = showPast ? 1 : currentMonth; m <= 12; m++) months.push(m)
 
   return (
     <div style={{ background: theme.bg, minHeight: '100vh' }}>
@@ -46,10 +47,16 @@ export default function MktPage() {
             {events.length} evento{events.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
-          onClick={() => setSubscribeOpen(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
-        >🔔 Receber mudanças e alertas</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={() => setShowPast(v => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
+          >{showPast ? '✕ Ocultar campanhas passadas' : '📁 Campanhas passadas'}</button>
+          <button
+            onClick={() => setSubscribeOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
+          >🔔 Receber mudanças e alertas</button>
+        </div>
       </div>
 
       <Legend />
