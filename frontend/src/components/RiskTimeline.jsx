@@ -52,8 +52,17 @@ export default function RiskTimeline({ items }) {
     ticks.push({ x: d * DAY_W, label: date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) })
   }
 
+  // weekend columns, shaded faintly — a Notion timeline touch that makes the
+  // week rhythm readable at a glance instead of counting grid lines
+  const weekends = []
+  for (let d = 0; d <= totalDays; d++) {
+    const dow = new Date(minDate + d * DAY_MS).getDay()
+    if (dow === 0 || dow === 6) weekends.push(d * DAY_W)
+  }
+
   const todayX = xFor(now)
   const rowH = 40
+  const totalH = items.length * rowH
 
   return (
     <div style={{ background: '#18181B', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, overflow: 'hidden' }}>
@@ -76,6 +85,16 @@ export default function RiskTimeline({ items }) {
 
           {/* Rows */}
           <div style={{ position: 'relative' }}>
+            {/* Weekend shading + week gridlines span the full row area, under the bars */}
+            <div style={{ position: 'absolute', top: 0, left: LABEL_W, width: CHART_W, height: totalH, pointerEvents: 'none' }}>
+              {weekends.map(x => (
+                <div key={x} style={{ position: 'absolute', top: 0, bottom: 0, left: x, width: DAY_W, background: 'rgba(255,255,255,0.018)' }} />
+              ))}
+              {ticks.map((t, i) => (
+                <div key={i} style={{ position: 'absolute', top: 0, bottom: 0, left: t.x, width: 1, background: 'rgba(255,255,255,0.05)' }} />
+              ))}
+            </div>
+
             {items.map((it, i) => {
               const color = SEVERITY_COLOR[it.severity]
               const s = it.start_date ? Number(it.start_date) : Number(it.due_date)
@@ -83,8 +102,11 @@ export default function RiskTimeline({ items }) {
               const barX = xFor(s)
               const barW = Math.max(xFor(e) - xFor(s), 8)
               return (
-                <div key={it.id} style={{ display: 'flex', height: rowH, borderBottom: '1px solid rgba(255,255,255,0.05)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)' }}>
-                  <div style={{ width: LABEL_W, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 14px', minWidth: 0 }}>
+                <div key={it.id} style={{ display: 'flex', height: rowH, borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <div style={{ width: LABEL_W, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 14px', minWidth: 0, background: '#18181B' }}>
                     <p style={{ fontSize: 12.5, fontWeight: 600, color: '#F4F4F5', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={it.tarefa}>
                       {it.tarefa}
                     </p>
@@ -102,7 +124,10 @@ export default function RiskTimeline({ items }) {
                         display: 'flex', alignItems: 'center', padding: '0 8px',
                         textDecoration: 'none', overflow: 'hidden', whiteSpace: 'nowrap',
                         boxShadow: `0 0 0 1px ${color}55`,
+                        transition: 'opacity 0.1s',
                       }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                      onMouseLeave={e => e.currentTarget.style.opacity = 0.85}
                     >
                       {barW > 60 && (
                         <span style={{ fontSize: 10.5, fontWeight: 700, color: '#0B0C0F' }}>{SEVERITY_LABEL[it.severity]}</span>
