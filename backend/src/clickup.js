@@ -107,13 +107,28 @@ export async function getListDetails(listId) {
   return data
 }
 
-export async function createTask(listId, { name, assignees = [], start_date, due_date, parent } = {}) {
+export async function createTask(listId, { name, assignees = [], start_date, due_date, parent, description } = {}) {
   const body = { name }
   if (assignees.length) body.assignees = assignees
   if (start_date) body.start_date = start_date
   if (due_date) body.due_date = due_date
   if (parent) body.parent = parent
+  if (description !== undefined) body.description = description
   const { data } = await axios.post(`${BASE}/list/${listId}/task`, body, { headers: headers() })
+  return data
+}
+
+export async function updateTaskDescription(taskId, description) {
+  const { data } = await axios.put(`${BASE}/task/${taskId}`, { description }, { headers: headers() })
+  return data
+}
+
+// Watchers follow task activity (get notified on new comments) without being
+// assignees (no ownership/responsibility implied) — used for opt-in notification subscribers.
+export async function updateTaskWatchers(taskId, { add = [], rem = [] } = {}) {
+  const body = {}
+  if (add.length || rem.length) body.watchers = { add, rem }
+  const { data } = await axios.put(`${BASE}/task/${taskId}`, body, { headers: headers() })
   return data
 }
 

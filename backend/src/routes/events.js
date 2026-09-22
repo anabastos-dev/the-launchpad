@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { syncEvents } from './calendar-sync.js'
 
 const router = Router()
 
@@ -41,6 +42,7 @@ router.post('/', async (req, res) => {
   const events = req.body
   if (!Array.isArray(events)) return res.status(400).json({ error: 'Payload deve ser um array' })
   try {
+    await syncEvents(events).catch(err => console.error('calendar-sync failed:', err.message)) // strips the transient _notify flag from each event as it goes; never blocks the actual save
     await redisSet(events)
     res.json({ ok: true, count: events.length })
   } catch (e) {

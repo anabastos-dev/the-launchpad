@@ -1,11 +1,10 @@
 import { Router } from 'express'
 import Anthropic from '@anthropic-ai/sdk'
 import * as clickup from '../clickup.js'
+import { getMembers, resolveMemberId } from '../members.js'
 
 const router = Router()
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
-const TEAM_ID = process.env.CLICKUP_TEAM_ID || '31012836'
 
 const FASE_FIELD = 'b16eadf9-ee56-4761-8ed1-929b1f28235a'
 const EL_FIELD   = '69a14be9-6e97-4178-a0ac-03cfc350ef61'
@@ -21,79 +20,6 @@ const FASE_IDS = {
 const EL_IDS = {
   'Sim': 'd5f995e8-514e-4350-97cd-0768011f768c',
   'Não': 'be8d60ff-3557-465e-a71c-3c3b936d648b',
-}
-
-// Cache de membros do workspace
-let membersCache = null
-async function getMembers() {
-  if (membersCache) return membersCache
-  const raw = await clickup.getWorkspaceMembers(TEAM_ID)
-  membersCache = raw.map(m => ({
-    id:    m.user?.id   || m.id,
-    name:  m.user?.username || m.username || '',
-    email: m.user?.email    || m.email    || '',
-  }))
-  return membersCache
-}
-
-function normalize(s) {
-  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
-}
-
-function dedup(s) { return s.replace(/(.)\1+/g, '$1') }
-
-function resolveMemberId(name, members) {
-  if (!name) return null
-  const needle = normalize(name)
-  const active = members.filter(m => m.name)
-
-  // 1. exact normalized match
-  const exact = active.find(m => normalize(m.name) === needle)
-  if (exact) return exact.id
-
-  // 2. member full name is substring of needle
-  const sub = active.find(m => needle.includes(normalize(m.name)))
-  if (sub) return sub.id
-
-  // 3. needle is substring of member name
-  const rev = active.find(m => normalize(m.name).includes(needle))
-  if (rev) return rev.id
-
-  const needleParts = needle.split(/\s+/)
-  const needleLast  = needleParts[needleParts.length - 1]
-  const needleFirst = needleParts[0]
-
-  // 4. last-name unique match (also require first name to appear, avoids "Bárbara Dias" → "Jonathan Dias")
-  if (needleLast && needleLast.length > 2) {
-    const lastMatches = active.filter(m => {
-      const mn = normalize(m.name)
-      const parts = mn.split(/\s+/)
-      if (parts[parts.length - 1] !== needleLast) return false
-      if (needleParts.length > 1 && needleFirst && needleFirst.length > 2) {
-        return mn.includes(needleFirst)
-      }
-      return true
-    })
-    if (lastMatches.length === 1) return lastMatches[0].id
-  }
-
-  // 5. all needle words appear in member name
-  const allWords = active.filter(m => {
-    const mn = normalize(m.name)
-    return needleParts.every(w => mn.includes(w))
-  })
-  if (allWords.length === 1) return allWords[0].id
-
-  // 6. email prefix match — "barbara dias" → "barbara.dias" matches barbara.dias@...
-  //    also tolerates doubled consonants: "andre.filizola" matches "andre.filizzola"
-  const emailPrefix = needle.replace(/\s+/g, '.')
-  const emailMatch = active.find(m => {
-    const ep = (m.email || '').toLowerCase().split('@')[0]
-    return ep === emailPrefix || dedup(ep) === emailPrefix
-  })
-  if (emailMatch) return emailMatch.id
-
-  return null
 }
 
 const SYSTEM_PROMPT = `Você é o agente de planejamento de campanhas da Minimal Club.

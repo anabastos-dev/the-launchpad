@@ -49,4 +49,7 @@ export const api = {
   addComment: (taskId, text) =>
     request(`/tasks/${taskId}/comment`, { method: 'POST', body: JSON.stringify({ text }) }),
   getComments: (taskId) => request(`/tasks/${taskId}/comments`),
+  getCalendarSubscribers: () => request('/calendar/subscribers'),
+  subscribeToCalendar: (email) =>
+    request('/calendar/subscribers', { method: 'POST', body: JSON.stringify({ email }) }),
 }

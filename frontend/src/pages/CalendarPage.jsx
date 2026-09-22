@@ -150,6 +150,7 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
   const [premissa,  setPremissa]  = useState(event?.premissa || '')
   const [listLink,  setListLink]  = useState(event?.listLink || '')
   const [status,    setStatus]    = useState(event?.status || '')
+  const [notify,    setNotify]    = useState(false)
   const [error,     setError]     = useState(null)
 
   function handleSave() {
@@ -165,6 +166,7 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
       missionId: missionId || null,
       premissa:  premissa.trim() || null,
       listLink:  listLink.trim() || null,
+      ...(notify ? { _notify: true } : {}),
     })
   }
 
@@ -315,6 +317,16 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
               ))}
             </div>
           </div>
+          {/* Manual notify override — dates and cancellation already notify automatically */}
+          {isEdit && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={notify} onChange={e => setNotify(e.target.checked)} style={{ width: 15, height: 15 }} />
+              <span style={{ fontSize: 12, color: '#52525B' }}>
+                Notificar essa alteração no ClickUp
+                <span style={{ display: 'block', fontSize: 10, color: '#A1A1AA' }}>Mudança de data ou cancelamento já notificam automaticamente — marque aqui só se quiser avisar de outra coisa</span>
+              </span>
+            </label>
+          )}
         </div>
 
         {error && <p style={{ fontSize: 11, color: '#E24B4A', margin: '12px 0 0' }}>{error}</p>}
@@ -343,11 +355,74 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
   )
 }
 
+function SubscribeModal({ onClose }) {
+  const [email,   setEmail]   = useState('')
+  const [status,  setStatus]  = useState('idle') // idle | loading | done | error
+  const [errMsg,  setErrMsg]  = useState('')
+
+  async function handleSubscribe() {
+    if (!email.trim()) return
+    setStatus('loading')
+    try {
+      const r = await api.subscribeToCalendar(email.trim())
+      setStatus('done')
+      setErrMsg(r.name ? `Pronto, ${r.name}!` : '')
+    } catch (e) {
+      setStatus('error')
+      setErrMsg(e.message || 'Erro ao inscrever')
+    }
+  }
+
+  const inputStyle = { border: '1px solid #E4E4E7', borderRadius: 8, padding: '9px 12px', fontSize: 13, color: '#18181B', outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' }
+
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{ background: '#fff', borderRadius: 14, padding: '28px 32px', width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 4px' }}>Alertas do calendário</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#18181B', margin: 0, letterSpacing: '-0.02em' }}>Receber mudanças e alertas</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#A1A1AA', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
+        </div>
+
+        {status === 'done' ? (
+          <p style={{ fontSize: 13, color: '#22C55E', fontWeight: 600 }}>✓ Inscrito! {errMsg} Você vai receber no ClickUp quando uma campanha mudar de data ou for cancelada.</p>
+        ) : (
+          <>
+            <p style={{ fontSize: 12, color: '#71717A', margin: '0 0 14px', lineHeight: 1.5 }}>
+              Coloque seu e-mail do ClickUp. Você vira observador (watcher) dos cards de campanha — sem ficar responsável por nenhuma tarefa — e recebe notificação nativa do ClickUp quando algo mudar.
+            </p>
+            <input
+              value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="seu.nome@minimalclub.com.br"
+              onKeyDown={e => e.key === 'Enter' && handleSubscribe()}
+              style={inputStyle} autoFocus
+            />
+            {status === 'error' && <p style={{ fontSize: 11, color: '#E24B4A', margin: '8px 0 0' }}>{errMsg}</p>}
+            <button
+              onClick={handleSubscribe}
+              disabled={status === 'loading'}
+              style={{ width: '100%', marginTop: 14, border: 'none', background: '#18181B', borderRadius: 8, padding: '10px 0', fontSize: 12, fontWeight: 600, color: '#fff', cursor: 'pointer', opacity: status === 'loading' ? 0.6 : 1 }}
+            >
+              {status === 'loading' ? 'Inscrevendo…' : 'Quero receber'}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function CalendarPage() {
   const [events,   setEvents]   = useState(loadEventsLocal)
   const [missions, setMissions] = useState([])
   const [modal,    setModal]    = useState(null) // { event } or { _prefillDate }
   const [syncMsg,  setSyncMsg]  = useState(null)
+  const [subscribeOpen, setSubscribeOpen] = useState(false)
 
   useEffect(() => {
     api.getCampaigns().then(setMissions).catch(() => {})
@@ -408,6 +483,10 @@ export default function CalendarPage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
+            onClick={() => setSubscribeOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#A1A1AA', cursor: 'pointer' }}
+          >🔔 Receber mudanças e alertas</button>
+          <button
             onClick={handleSync}
             style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#A1A1AA', cursor: 'pointer' }}
           >{syncMsg || '↑ Publicar'}</button>
@@ -456,6 +535,7 @@ export default function CalendarPage() {
           onDelete={handleDelete}
         />
       )}
+      {subscribeOpen && <SubscribeModal onClose={() => setSubscribeOpen(false)} />}
     </div>
   )
 }

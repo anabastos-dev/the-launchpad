@@ -7,6 +7,7 @@ import taskRoutes from './routes/tasks.js'
 import webhookRoutes from './routes/webhooks.js'
 import eventsRoutes from './routes/events.js'
 import agentRoutes from './routes/agent.js'
+import calendarSyncRoutes from './routes/calendar-sync.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -24,6 +25,7 @@ app.use('/api/tasks', taskRoutes)
 app.use('/api/webhooks', webhookRoutes)
 app.use('/api/events', eventsRoutes)
 app.use('/api/agent', agentRoutes)
+app.use('/api/calendar', calendarSyncRoutes)
 
 app.get('/api/healthcheck', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }))
 
