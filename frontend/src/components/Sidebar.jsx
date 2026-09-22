@@ -45,7 +45,9 @@ export default function Sidebar({ onLogout, userName = 'Ana Bastos' }) {
   useEffect(() => {
     api.getCampaigns()
       .then(data => {
-        const sorted = [...data].sort((a, b) => (Number(a.due_date) || Infinity) - (Number(b.due_date) || Infinity))
+        const sorted = [...data]
+          .filter(c => !c.finalized)
+          .sort((a, b) => (Number(a.due_date) || Infinity) - (Number(b.due_date) || Infinity))
         setCampaigns(sorted)
       })
       .catch(() => {})

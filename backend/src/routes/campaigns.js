@@ -134,19 +134,19 @@ async function getAlerts(listId, force = false) {
 
 // GET /api/campaigns — returns configured active campaigns (each campaign = one ClickUp list)
 router.get('/', async (req, res) => {
-  const finalized = getFinalized()
+  const finalized = await getFinalized()
   res.json(ACTIVE_CAMPAIGNS().map(c => ({ ...c, finalized: finalized.includes(c.id) })))
 })
 
 // POST /api/campaigns/:id/finalize — mark campaign as finalized
-router.post('/:id/finalize', (req, res) => {
-  finalize(req.params.id)
+router.post('/:id/finalize', async (req, res) => {
+  await finalize(req.params.id)
   res.json({ ok: true })
 })
 
 // DELETE /api/campaigns/:id/finalize — unmark campaign as finalized
-router.delete('/:id/finalize', (req, res) => {
-  unfinalize(req.params.id)
+router.delete('/:id/finalize', async (req, res) => {
+  await unfinalize(req.params.id)
   res.json({ ok: true })
 })
 

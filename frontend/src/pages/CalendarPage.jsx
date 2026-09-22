@@ -44,6 +44,7 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
   const [missionId, setMissionId] = useState(event?.missionId || '')
   const [premissa,  setPremissa]  = useState(event?.premissa || '')
   const [listLink,  setListLink]  = useState(event?.listLink || '')
+  const [photosStr, setPhotosStr] = useState((event?.photos || []).join('\n'))
   const [status,    setStatus]    = useState(event?.status || '')
   const [notify,    setNotify]    = useState(false)
   const [error,     setError]     = useState(null)
@@ -61,6 +62,7 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
       missionId: missionId || null,
       premissa:  premissa.trim() || null,
       listLink:  listLink.trim() || null,
+      photos:    photosStr.split('\n').map(s => s.trim()).filter(Boolean),
       ...(notify ? { _notify: true } : {}),
     })
   }
@@ -177,6 +179,26 @@ function EventModal({ event, missions, onClose, onSave, onDelete }) {
               placeholder="https://app.clickup.com/..."
               style={inputStyle}
             />
+          </label>
+
+          {/* Fotos do produto */}
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <span style={labelStyle}>Fotos do produto</span>
+            <textarea
+              value={photosStr}
+              onChange={e => setPhotosStr(e.target.value)}
+              placeholder={'Uma URL de imagem por linha\nhttps://...'}
+              rows={2}
+              style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5, fontFamily: 'monospace', fontSize: 11.5 }}
+            />
+            {photosStr.split('\n').map(s => s.trim()).filter(Boolean).length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+                {photosStr.split('\n').map(s => s.trim()).filter(Boolean).map((url, i) => (
+                  <img key={i} src={url} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover', border: '1px solid #E4E4E7' }}
+                    onError={e => { e.currentTarget.style.display = 'none' }} />
+                ))}
+              </div>
+            )}
           </label>
 
           {/* Mission link */}

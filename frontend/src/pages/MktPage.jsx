@@ -19,9 +19,9 @@ function EventDetail({ event, onClose }) {
   const start = fmt(event.start_date)
   const end   = fmt(event.due_date)
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}
+    <div className="mkt-detail-backdrop"
       onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: '#fff', borderRadius: 14, width: 420, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+      <div className="mkt-detail-panel">
         {/* Header fixo */}
         <div style={{ padding: '24px 28px 16px', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -68,6 +68,20 @@ function EventDetail({ event, onClose }) {
             </div>
           ) : (
             <p style={{ fontSize: 12, color: '#A1A1AA', fontStyle: 'italic', margin: '16px 0 0' }}>Sem premissa cadastrada.</p>
+          )}
+
+          {event.photos && event.photos.length > 0 && (
+            <div style={{ paddingTop: 20 }}>
+              <p style={{ fontSize: 9.5, fontWeight: 700, color: '#A1A1AA', letterSpacing: '0.09em', textTransform: 'uppercase', margin: '0 0 10px' }}>Fotos do produto</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {event.photos.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                    <img src={url} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 8, border: '1px solid #F0F0F0', display: 'block' }}
+                      onError={e => { e.currentTarget.closest('a').style.display = 'none' }} />
+                  </a>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -137,6 +151,31 @@ export default function MktPage() {
       {selected && <EventDetail event={selected} onClose={() => setSelected(null)} />}
       {subscribeOpen && <SubscribeModal onClose={() => setSubscribeOpen(false)} />}
     </div>
+
+    <style>{`
+      .mkt-detail-backdrop {
+        position: fixed; inset: 0; z-index: 999;
+        background: rgba(0,0,0,0.5);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .mkt-detail-panel {
+        background: #fff; border-radius: 14px; width: 420px; max-height: 85vh;
+        display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      }
+      @media (min-width: 900px) {
+        .mkt-detail-backdrop {
+          background: transparent;
+          justify-content: flex-end;
+          align-items: stretch;
+        }
+        .mkt-detail-panel {
+          border-radius: 0; width: 420px; max-width: 90vw;
+          height: 100vh; max-height: 100vh;
+          box-shadow: -8px 0 40px rgba(47,46,43,0.12);
+          border-left: 1px solid ${theme.border};
+        }
+      }
+    `}</style>
     </div>
   )
 }

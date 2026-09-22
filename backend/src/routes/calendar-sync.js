@@ -42,6 +42,7 @@ function buildDescription(ev) {
   parts.push(`Tipo: ${ev.type || '—'}`)
   parts.push(`Status: ${ev.status || '—'}`)
   if (ev.listLink) parts.push(`Lista equivalente no ClickUp: ${ev.listLink}`)
+  if (ev.photos && ev.photos.length) parts.push(`Fotos do produto:\n${ev.photos.join('\n')}`)
   return parts.join('\n\n')
 }
 
@@ -116,7 +117,7 @@ export async function syncEvents(events) {
       }
       cardmap[ev.id] = {
         taskId: created.id,
-        snapshot: { name: ev.name, start_date: ev.start_date, due_date: ev.due_date, status: ev.status, premissa: ev.premissa || null, type: ev.type, listLink: ev.listLink || null },
+        snapshot: { name: ev.name, start_date: ev.start_date, due_date: ev.due_date, status: ev.status, premissa: ev.premissa || null, type: ev.type, listLink: ev.listLink || null, photos: ev.photos || [] },
       }
       continue
     }
@@ -127,6 +128,7 @@ export async function syncEvents(events) {
     const justCancelled = prev.status !== ev.status && ev.status === 'Cancelado'
     const descChanged = prev.premissa !== (ev.premissa || null) || prev.name !== ev.name
       || prev.type !== ev.type || prev.status !== ev.status || prev.listLink !== (ev.listLink || null)
+      || JSON.stringify(prev.photos || []) !== JSON.stringify(ev.photos || [])
 
     if (!datesChanged && !descChanged && !forceNotify) continue // nothing to sync, skip API calls entirely
 
