@@ -123,7 +123,7 @@ export function MonthGrid({ year, month, label, events, onEventClick, onDayClick
                         key={ev.id}
                         onClick={e => { e.stopPropagation(); onEventClick(ev) }}
                         title={ev.name}
-                        style={{ background: color, opacity: 0.45 * dim, borderRadius: 3, height: 5, cursor: 'pointer' }}
+                        style={{ background: color, opacity: 0.55 * dim, borderRadius: 3, height: 18, cursor: 'pointer' }}
                       />
                     )
                   }
@@ -190,7 +190,7 @@ export function SubscribeModal({ onClose }) {
         ) : (
           <>
             <p style={{ fontSize: 12, color: '#71717A', margin: '0 0 14px', lineHeight: 1.5 }}>
-              Coloque seu e-mail do ClickUp. Você vira observador (watcher) dos cards de campanha — sem ficar responsável por nenhuma tarefa — e recebe notificação nativa do ClickUp quando algo mudar.
+              Coloque seu e-mail do ClickUp. Você recebe um alerta sempre que a <strong>data</strong> de uma campanha mudar, ou se ela for <strong>cancelada</strong> — direto no card, no ClickUp. Você vira observador (watcher), sem ficar responsável por nenhuma tarefa.
             </p>
             <input
               value={email} onChange={e => setEmail(e.target.value)}
