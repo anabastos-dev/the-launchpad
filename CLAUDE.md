@@ -181,6 +181,10 @@ curl -X DELETE https://backend-ten-chi-jleyncxvf6.vercel.app/api/agent/delete-li
 
 ## Issues Conhecidos
 
-- **Finalizar campanha no dashboard:** botão não funciona (Vercel serverless é stateless, `finalized.json` não persiste) — a resolver
-- **Chat do agente no app:** markdown aparece como texto puro em vez de renderizado — a resolver
+- **Chat do Campaign Creator no app:** markdown aparece como texto puro em vez de renderizado — a resolver
 - **Timeout do Vercel:** funções serverless têm timeout curto; grupos grandes podem falhar na primeira tentativa. Retentar individualmente sempre funciona.
+
+## Notas de implementação
+
+- **Finalizar campanha:** estado fica em Redis (`launchpad_finalized_campaigns`), não em arquivo local — Vercel serverless não persiste disco entre invocações.
+- **Chat do Campaign Creator (`/api/agent/chat` e `/api/agent/strategy-chat`):** respostas são *streamed* (`stream.on('text', ...)` + `stream.finalMessage()` do SDK da Anthropic) em vez de aguardar a resposta completa — sem isso, o Vercel derruba silenciosamente conexões longas entre os projetos de frontend e backend. Não usar `stream.textStream` — não existe nessa versão do SDK, só quebra silenciosamente.
