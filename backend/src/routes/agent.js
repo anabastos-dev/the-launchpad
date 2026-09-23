@@ -105,9 +105,8 @@ async function streamText(res, params) {
   res.setHeader('Cache-Control', 'no-cache')
   res.flushHeaders?.()
   const stream = anthropic.messages.stream(params)
-  for await (const text of stream.textStream) {
-    res.write(text)
-  }
+  stream.on('text', delta => res.write(delta))
+  await stream.finalMessage()
   res.end()
 }
 
