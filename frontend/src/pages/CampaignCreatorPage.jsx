@@ -16,59 +16,74 @@ const FASE_COLORS = {
 // almost every launch. The agent (or Ana, by hand) fills in responsável,
 // datas and adjusts grupos/tarefas from here based on the briefing, instead
 // of starting from a blank page every time.
+//
+// Responsáveis pré-preenchidos a partir do padrão real de quem fez cada tipo
+// de tarefa nas últimas campanhas (Jeans Comfort, Polo Pima, Camiseta 2.0,
+// Black Friday 2026) — um ponto de partida, não uma regra fixa.
+const ANA        = 'Ana Luisa Bastos'
+const PEDRO      = 'Pedro Nasser'
+const JONATHAN   = 'Jonathan Dias'
+const ANDRE      = 'André Filizzola'
+const GABRIEL_G  = 'Gabriel Glatz'
+const LUCAS_KURT = 'Lucas Kurt'
+const DANIEL_M   = 'Daniel Junio Magalhães'
+const CAROLINA   = 'Carolina Amaral'
+const BARBARA    = 'Bárbara Hully Macedo'
+const ARTHUR     = 'Arthur Coelho Lemos'
+
 function defaultPlaybook() {
-  const t = (name, fase) => ({ name, assignees: [], due_date: null, fase, el: 'Não' })
-  const g = (name, fase, tarefas) => ({ name, assignees: [], due_date: null, fase, el: 'Não', tarefas })
+  const t = (name, fase, resp) => ({ name, assignees: resp ? [resp] : [], due_date: null, fase, el: 'Não' })
+  const g = (name, fase, resp, tarefas) => ({ name, assignees: resp ? [resp] : [], due_date: null, fase, el: 'Não', tarefas })
   return [
-    g('Kickoff', 'Kickoff', [
-      t('Reunião de kickoff', 'Kickoff'),
-      t('Alinhar briefing e cronograma com o time', 'Kickoff'),
+    g('Kickoff', 'Kickoff', ANA, [
+      t('Reunião de kickoff', 'Kickoff', ANA),
+      t('Alinhar briefing e cronograma com o time', 'Kickoff', ANA),
     ]),
-    g('Criativos — Vídeos', 'Produção', [
-      t('Roteiro dos vídeos', 'Produção'),
-      t('Gravação', 'Produção'),
-      t('Edição e aprovação', 'Produção'),
+    g('Criativos — Vídeos', 'Produção', PEDRO, [
+      t('Roteiro dos vídeos', 'Produção', PEDRO),
+      t('Gravação', 'Produção', PEDRO),
+      t('Edição e aprovação', 'Produção', PEDRO),
     ]),
-    g('Criativos — Estáticos Meta', 'Produção', [
-      t('Peças estáticas Meta Ads', 'Produção'),
-      t('Aprovação das peças', 'Produção'),
+    g('Criativos — Estáticos Meta', 'Produção', JONATHAN, [
+      t('Peças estáticas Meta Ads', 'Produção', JONATHAN),
+      t('Aprovação das peças', 'Produção', PEDRO),
     ]),
-    g('Criativos — Estáticos Google', 'Produção', [
-      t('Peças estáticas Google Ads', 'Produção'),
-      t('Aprovação das peças', 'Produção'),
+    g('Criativos — Estáticos Google', 'Produção', JONATHAN, [
+      t('Peças estáticas Google Ads', 'Produção', JONATHAN),
+      t('Aprovação das peças', 'Produção', PEDRO),
     ]),
-    g('Setup Meta Ads', 'Pré-lançamento', [
-      t('Estrutura de campanhas', 'Pré-lançamento'),
-      t('Configurar públicos e orçamento', 'Pré-lançamento'),
+    g('Setup Meta Ads', 'Pré-lançamento', ANDRE, [
+      t('Estrutura de campanhas', 'Pré-lançamento', ANDRE),
+      t('Configurar públicos e orçamento', 'Pré-lançamento', ANDRE),
     ]),
-    g('Setup Google Ads', 'Pré-lançamento', [
-      t('Estrutura de campanhas', 'Pré-lançamento'),
-      t('Configurar públicos e orçamento', 'Pré-lançamento'),
+    g('Setup Google Ads', 'Pré-lançamento', ANDRE, [
+      t('Estrutura de campanhas', 'Pré-lançamento', ANDRE),
+      t('Configurar públicos e orçamento', 'Pré-lançamento', ANDRE),
     ]),
-    g('Site', 'Produção', [
-      t('Página/banner da campanha', 'Produção'),
-      t('QA da página', 'Pré-lançamento'),
+    g('Site', 'Produção', GABRIEL_G, [
+      t('Página/banner da campanha', 'Produção', GABRIEL_G),
+      t('QA da página', 'Pré-lançamento', GABRIEL_G),
     ]),
-    g('CRM — Copy', 'Produção', [
-      t('Copy dos e-mails/SMS', 'Produção'),
-      t('Aprovação da copy', 'Produção'),
+    g('CRM — Copy', 'Produção', LUCAS_KURT, [
+      t('Copy dos e-mails/SMS', 'Produção', LUCAS_KURT),
+      t('Aprovação da copy', 'Produção', LUCAS_KURT),
     ]),
-    g('CRM — Disparos', 'Pré-lançamento', [
-      t('Configurar disparos', 'Pré-lançamento'),
-      t('Agendar envios', 'Pré-lançamento'),
+    g('CRM — Disparos', 'Pré-lançamento', DANIEL_M, [
+      t('Configurar disparos', 'Pré-lançamento', DANIEL_M),
+      t('Agendar envios', 'Pré-lançamento', DANIEL_M),
     ]),
-    g('Social Media', 'Pré-lançamento', [
-      t('Calendário de posts', 'Pré-lançamento'),
-      t('Produção dos posts', 'Pré-lançamento'),
+    g('Social Media', 'Pré-lançamento', CAROLINA, [
+      t('Calendário de posts', 'Pré-lançamento', CAROLINA),
+      t('Produção dos posts', 'Pré-lançamento', CAROLINA),
     ]),
-    g('Comercial / Lojas', 'Pré-lançamento', [
-      t('Briefing para o time comercial', 'Pré-lançamento'),
+    g('Comercial / Lojas', 'Pré-lançamento', BARBARA, [
+      t('Briefing para o time comercial', 'Pré-lançamento', BARBARA),
     ]),
-    g('B2B', 'Pré-lançamento', [
-      t('Briefing para o time B2B', 'Pré-lançamento'),
+    g('B2B', 'Pré-lançamento', ARTHUR, [
+      t('Briefing para o time B2B', 'Pré-lançamento', ARTHUR),
     ]),
-    g('Retrospectiva', 'Retrospectiva', [
-      t('Debriefing de resultados', 'Retrospectiva'),
+    g('Retrospectiva', 'Retrospectiva', DANIEL_M, [
+      t('Debriefing de resultados', 'Retrospectiva', DANIEL_M),
     ]),
   ]
 }
