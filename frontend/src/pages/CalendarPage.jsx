@@ -5,12 +5,20 @@ import { theme } from '../theme.js'
 import { useTeam } from '../teamContext.jsx'
 
 const EVENTS_KEY = 'launchpad_calendar_events'
+const DIRTY_KEY  = 'launchpad_calendar_dirty'
 
 function loadEventsLocal() {
   try { return JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]') } catch { return [] }
 }
 function cacheLocal(evs) {
   localStorage.setItem(EVENTS_KEY, JSON.stringify(evs))
+}
+function isDirty() {
+  return localStorage.getItem(DIRTY_KEY) === '1'
+}
+function setDirty(v) {
+  if (v) localStorage.setItem(DIRTY_KEY, '1')
+  else localStorage.removeItem(DIRTY_KEY)
 }
 
 function uid() {
@@ -298,10 +306,19 @@ export default function CalendarPage() {
   const [modal,    setModal]    = useState(null) // { event } or { _prefillDate }
   const [viewing,  setViewing]  = useState(null) // read-only detail, for líderes
   const [syncMsg,  setSyncMsg]  = useState(null)
+  const [dirty,    setDirtyState] = useState(isDirty)
   const [subscribeOpen, setSubscribeOpen] = useState(false)
+
+  function markDirty(v) {
+    setDirty(v)
+    setDirtyState(v)
+  }
 
   useEffect(() => {
     api.getCampaigns().then(setMissions).catch(() => {})
+    // Never clobber unpublished local edits with the last-published server
+    // state — only sync from the server when there's nothing pending.
+    if (isDirty()) return
     api.getEvents().then(evs => {
       if (evs.length > 0) { setEvents(evs); cacheLocal(evs) }
     }).catch(() => {})
@@ -317,6 +334,7 @@ export default function CalendarPage() {
     setSyncMsg('Publicando...')
     try {
       await api.saveEvents(events)
+      markDirty(false)
       setSyncMsg('✓ Publicado!')
     } catch {
       setSyncMsg('Erro — faça login novamente')
@@ -329,12 +347,14 @@ export default function CalendarPage() {
     setModal({ _prefillDate: str })
   }
 
+  // Saves and deletes only touch local state + localStorage — nothing reaches
+  // the public calendar until "Publicar" is clicked.
   function handleSave(ev) {
     setEvents(prev => {
       const exists = prev.find(e => e.id === ev.id)
       const next = exists ? prev.map(e => e.id === ev.id ? ev : e) : [...prev, ev]
       cacheLocal(next)
-      api.saveEvents(next).catch(() => {})
+      markDirty(true)
       return next
     })
     setModal(null)
@@ -344,7 +364,7 @@ export default function CalendarPage() {
     setEvents(prev => {
       const next = prev.filter(e => e.id !== id)
       cacheLocal(next)
-      api.saveEvents(next).catch(() => {})
+      markDirty(true)
       return next
     })
     setModal(null)
@@ -372,8 +392,12 @@ export default function CalendarPage() {
             <>
               <button
                 onClick={handleSync}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
-              >{syncMsg || '↑ Publicar'}</button>
+                title={dirty ? 'Você tem alterações não publicadas' : ''}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: dirty ? theme.accentBg : theme.bgSubtle, border: `1px solid ${dirty ? theme.accentBorder : theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: dirty ? theme.accent : theme.textMuted, cursor: 'pointer' }}
+              >
+                {dirty && !syncMsg && <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.accent, display: 'inline-block' }} />}
+                {syncMsg || (dirty ? 'Publicar alterações' : '↑ Publicar')}
+              </button>
               <button
                 onClick={() => setModal({})}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.accent, border: 'none', borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
