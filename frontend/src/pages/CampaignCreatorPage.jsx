@@ -293,14 +293,27 @@ function Message({ role, content }) {
   )
 }
 
+// Progress here (chat history + the playbook being edited) previously lived
+// only in React state — closing the tab by accident threw the whole
+// conversation away. Persisted as one draft so it survives reloads.
+const DRAFT_KEY = 'launchpad_campaign_creator_draft'
+
+function loadDraft() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null') } catch { return null }
+}
+function emptyDraft() {
+  return { campaignName: '', listLink: '', taskList: { campaign: '', grupos: defaultPlaybook() }, activeTab: 'plan', messages: [], stratMessages: [] }
+}
+
 // ─── Main page ───────────────────────────────────────────────────────────────
 export default function CampaignCreatorPage() {
-  const [campaignName, setCampaignName] = useState('')
-  const [listLink,     setListLink]     = useState('')
-  const [taskList,     setTaskList]     = useState({ campaign: '', grupos: defaultPlaybook() })
-  const [activeTab,    setActiveTab]    = useState('plan') // 'plan' | 'strategy'
-  const [messages,     setMessages]     = useState([])
-  const [stratMessages, setStratMessages] = useState([])
+  const draft = loadDraft() || emptyDraft()
+  const [campaignName, setCampaignName] = useState(draft.campaignName)
+  const [listLink,     setListLink]     = useState(draft.listLink)
+  const [taskList,     setTaskList]     = useState(draft.taskList)
+  const [activeTab,    setActiveTab]    = useState(draft.activeTab) // 'plan' | 'strategy'
+  const [messages,     setMessages]     = useState(draft.messages)
+  const [stratMessages, setStratMessages] = useState(draft.stratMessages)
   const [input,        setInput]        = useState('')
   const [loading,      setLoading]      = useState(false)
   const [stratLoading, setStratLoading] = useState(false)
@@ -313,6 +326,22 @@ export default function CampaignCreatorPage() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, stratMessages, loading, stratLoading, activeTab])
   useEffect(() => { setTaskList(prev => ({ ...prev, campaign: campaignName })) }, [campaignName])
   useEffect(() => { api.getTeamMembers().then(setMembers).catch(() => {}) }, [])
+  useEffect(() => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ campaignName, listLink, taskList, activeTab, messages, stratMessages }))
+  }, [campaignName, listLink, taskList, activeTab, messages, stratMessages])
+
+  function handleNewDraft() {
+    if (!confirm('Começar uma campanha nova? O rascunho atual (chat e planilha) vai ser apagado.')) return
+    const fresh = emptyDraft()
+    localStorage.removeItem(DRAFT_KEY)
+    setCampaignName(fresh.campaignName)
+    setListLink(fresh.listLink)
+    setTaskList(fresh.taskList)
+    setActiveTab(fresh.activeTab)
+    setMessages(fresh.messages)
+    setStratMessages(fresh.stratMessages)
+    setUploadResult(null)
+  }
 
   const listId = parseListId(listLink)
   const sortedMembers = [...members].filter(m => m.name).sort((a, b) => a.name.localeCompare(b.name))
@@ -443,8 +472,15 @@ export default function CampaignCreatorPage() {
       {/* ── Chat panel ──────────────────────────────────────────── */}
       <div style={{ width: '44%', display: 'flex', flexDirection: 'column', borderRight: `1px solid ${theme.border}` }}>
         <div style={{ padding: '20px 24px 14px', borderBottom: `1px solid ${theme.border}`, flexShrink: 0 }}>
-          <p style={{ fontSize: 10, color: theme.accent, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 4px' }}>Campaign Creator</p>
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: theme.text, margin: '0 0 14px', letterSpacing: '-0.03em' }}>Nova campanha</h1>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div>
+              <p style={{ fontSize: 10, color: theme.accent, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 4px' }}>Campaign Creator</p>
+              <h1 style={{ fontSize: 20, fontWeight: 700, color: theme.text, margin: '0 0 14px', letterSpacing: '-0.03em' }}>Nova campanha</h1>
+            </div>
+            <button onClick={handleNewDraft} title="Começar uma campanha nova (apaga o rascunho atual)"
+              style={{ fontSize: 11, fontWeight: 600, color: theme.textFaint, background: 'none', border: `1px solid ${theme.border}`, borderRadius: 7, padding: '5px 10px', cursor: 'pointer', flexShrink: 0 }}
+            >+ Nova</button>
+          </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input
