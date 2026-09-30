@@ -4,8 +4,13 @@ import { EVENT_TYPES, TYPE_COLORS, Legend, MonthGrid, SubscribeModal, EventDetai
 import { theme } from '../theme.js'
 import { useTeam } from '../teamContext.jsx'
 
-const EVENTS_KEY = 'launchpad_calendar_events'
-const DIRTY_KEY  = 'launchpad_calendar_dirty'
+const EVENTS_KEY  = 'launchpad_calendar_events'
+// Per-event pending map ({ [id]: 'saved' | 'deleted' }), not a single global
+// flag — a global "dirty means skip syncing from the server" made this
+// device blind to everyone else's published changes the moment it had any
+// unpublished edit of its own, and publishing would then have overwritten
+// their work with this device's stale snapshot.
+const PENDING_KEY = 'launchpad_calendar_pending'
 
 function loadEventsLocal() {
   try { return JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]') } catch { return [] }
@@ -13,12 +18,31 @@ function loadEventsLocal() {
 function cacheLocal(evs) {
   localStorage.setItem(EVENTS_KEY, JSON.stringify(evs))
 }
-function isDirty() {
-  return localStorage.getItem(DIRTY_KEY) === '1'
+function loadPending() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '{}') } catch { return {} }
 }
-function setDirty(v) {
-  if (v) localStorage.setItem(DIRTY_KEY, '1')
-  else localStorage.removeItem(DIRTY_KEY)
+function savePending(p) {
+  localStorage.setItem(PENDING_KEY, JSON.stringify(p))
+}
+function hasPending() {
+  return Object.keys(loadPending()).length > 0
+}
+
+// Server events are the source of truth for everything this device hasn't
+// touched locally; local pending edits/deletes win for the ids they cover.
+function mergeWithPending(serverEvents) {
+  const pending = loadPending()
+  const localById = Object.fromEntries(loadEventsLocal().map(e => [e.id, e]))
+  const merged = serverEvents.filter(e => pending[e.id] !== 'deleted')
+  const idxById = Object.fromEntries(merged.map((e, i) => [e.id, i]))
+  for (const [id, status] of Object.entries(pending)) {
+    if (status === 'deleted') continue
+    const localEv = localById[id]
+    if (!localEv) continue
+    if (id in idxById) merged[idxById[id]] = localEv
+    else merged.push(localEv)
+  }
+  return merged
 }
 
 function uid() {
@@ -306,21 +330,18 @@ export default function CalendarPage() {
   const [modal,    setModal]    = useState(null) // { event } or { _prefillDate }
   const [viewing,  setViewing]  = useState(null) // read-only detail, for líderes
   const [syncMsg,  setSyncMsg]  = useState(null)
-  const [dirty,    setDirtyState] = useState(isDirty)
+  const [dirty,    setDirtyState] = useState(hasPending)
   const [subscribeOpen, setSubscribeOpen] = useState(false)
-
-  function markDirty(v) {
-    setDirty(v)
-    setDirtyState(v)
-  }
 
   useEffect(() => {
     api.getCampaigns().then(setMissions).catch(() => {})
-    // Never clobber unpublished local edits with the last-published server
-    // state — only sync from the server when there's nothing pending.
-    if (isDirty()) return
-    api.getEvents().then(evs => {
-      if (evs.length > 0) { setEvents(evs); cacheLocal(evs) }
+    // Always pull the latest published state — other editors' changes must
+    // show up here — but keep this device's own unpublished edits layered
+    // on top, so they don't get silently dropped either.
+    api.getEvents().then(serverEvents => {
+      const merged = mergeWithPending(serverEvents)
+      setEvents(merged)
+      cacheLocal(merged)
     }).catch(() => {})
   }, [])
 
@@ -334,7 +355,8 @@ export default function CalendarPage() {
     setSyncMsg('Publicando...')
     try {
       await api.saveEvents(events)
-      markDirty(false)
+      savePending({})
+      setDirtyState(false)
       setSyncMsg('✓ Publicado!')
     } catch {
       setSyncMsg('Erro — faça login novamente')
@@ -354,9 +376,12 @@ export default function CalendarPage() {
       const exists = prev.find(e => e.id === ev.id)
       const next = exists ? prev.map(e => e.id === ev.id ? ev : e) : [...prev, ev]
       cacheLocal(next)
-      markDirty(true)
       return next
     })
+    const pending = loadPending()
+    pending[ev.id] = 'saved'
+    savePending(pending)
+    setDirtyState(true)
     setModal(null)
   }
 
@@ -364,9 +389,12 @@ export default function CalendarPage() {
     setEvents(prev => {
       const next = prev.filter(e => e.id !== id)
       cacheLocal(next)
-      markDirty(true)
       return next
     })
+    const pending = loadPending()
+    pending[id] = 'deleted'
+    savePending(pending)
+    setDirtyState(true)
     setModal(null)
   }
 
