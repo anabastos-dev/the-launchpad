@@ -1,51 +1,35 @@
 // Líder profiles (which teams they're responsible for, who their liderados
-// are, and when they last saw the daily digest) — Redis-backed, same pattern
-// as finalized.js and calendar-sync.js.
-const UPSTASH_URL   = process.env.UPSTASH_REDIS_REST_URL
-const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
-const KEY = 'launchpad_team_profiles'
-
-async function readAll() {
-  if (!UPSTASH_URL) return {}
-  const res = await fetch(`${UPSTASH_URL}/get/${KEY}`, {
-    headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` },
-  })
-  const { result } = await res.json()
-  if (!result) return {}
-  const parsed = JSON.parse(result)
-  return typeof parsed === 'string' ? JSON.parse(parsed) : parsed
-}
-
-async function writeAll(profiles) {
-  if (!UPSTASH_URL) return
-  await fetch(`${UPSTASH_URL}/set/${KEY}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(profiles),
-  })
-}
+// are, and when they last saw the daily digest) — Supabase-backed, same
+// pattern as finalized.js and calendar-sync.js.
+import { supabase } from './supabase.js'
 
 function key(email) { return (email || '').toLowerCase() }
 
 export async function getProfile(email) {
-  const profiles = await readAll()
-  return profiles[key(email)] || null
+  const { data, error } = await supabase
+    .from('team_profiles')
+    .select('data')
+    .eq('email', key(email))
+    .maybeSingle()
+  if (error) throw error
+  return data?.data || null
 }
 
 export async function saveProfile(email, { teams, liderados }) {
-  const profiles = await readAll()
-  profiles[key(email)] = {
-    ...(profiles[key(email)] || {}),
+  const existing = await getProfile(email)
+  const next = {
+    ...(existing || {}),
     teams: Array.isArray(teams) ? teams : [],
     liderados: Array.isArray(liderados) ? liderados : [],
   }
-  await writeAll(profiles)
-  return profiles[key(email)]
+  const { error } = await supabase.from('team_profiles').upsert({ email: key(email), data: next })
+  if (error) throw error
+  return next
 }
 
 export async function markDigestSeen(email) {
-  const profiles = await readAll()
-  const existing = profiles[key(email)] || { teams: [], liderados: [] }
-  profiles[key(email)] = { ...existing, lastSeenDigest: new Date().toISOString().slice(0, 10) }
-  await writeAll(profiles)
+  const existing = await getProfile(email) || { teams: [], liderados: [] }
+  const next = { ...existing, lastSeenDigest: new Date().toISOString().slice(0, 10) }
+  const { error } = await supabase.from('team_profiles').upsert({ email: key(email), data: next })
+  if (error) throw error
 }

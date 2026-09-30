@@ -1,33 +1,32 @@
 import { Router } from 'express'
 import * as clickup from '../clickup.js'
 import { getMembers, resolveMemberByEmail } from '../members.js'
+import { supabase } from '../supabase.js'
 
 const router = Router()
 
-const UPSTASH_URL   = process.env.UPSTASH_REDIS_REST_URL
-const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN
-const CARDMAP_KEY     = 'launchpad_calendar_cardmap'
-const SUBSCRIBERS_KEY = 'launchpad_calendar_subscribers'
-const NOTIFY_LIST_ID  = process.env.CLICKUP_CALENDAR_LIST_ID || '900702226925'
+const NOTIFY_LIST_ID = process.env.CLICKUP_CALENDAR_LIST_ID || '900702226925'
 
-async function redisGet(key, fallback) {
-  if (!UPSTASH_URL) return fallback
-  const res = await fetch(`${UPSTASH_URL}/get/${key}`, {
-    headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` },
-  })
-  const { result } = await res.json()
-  if (!result) return fallback
-  const parsed = JSON.parse(result)
-  return typeof parsed === 'string' ? JSON.parse(parsed) : parsed
+async function getCardmap() {
+  const { data, error } = await supabase.from('calendar_cardmap').select('event_id, task_id, snapshot')
+  if (error) throw error
+  return Object.fromEntries(data.map(r => [r.event_id, { taskId: r.task_id, snapshot: r.snapshot }]))
+}
+async function upsertCardEntry(eventId, taskId, snapshot) {
+  const { error } = await supabase.from('calendar_cardmap')
+    .upsert({ event_id: eventId, task_id: taskId, snapshot, updated_at: new Date().toISOString() })
+  if (error) throw error
 }
 
-async function redisSet(key, value) {
-  if (!UPSTASH_URL) return
-  await fetch(`${UPSTASH_URL}/set/${key}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${UPSTASH_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(value),
-  })
+async function getSubscribers() {
+  const { data, error } = await supabase.from('calendar_subscribers').select('email, user_id, name')
+  if (error) throw error
+  return data.map(r => ({ email: r.email, userId: Number(r.user_id), name: r.name }))
+}
+async function addSubscriberRow(member) {
+  const { error } = await supabase.from('calendar_subscribers')
+    .upsert({ email: member.email.toLowerCase(), user_id: String(member.id), name: member.name })
+  if (error) throw error
 }
 
 function fmtDate(ms) {
@@ -50,7 +49,7 @@ function buildDescription(ev) {
 
 router.get('/subscribers', async (req, res) => {
   try {
-    res.json(await redisGet(SUBSCRIBERS_KEY, []))
+    res.json(await getSubscribers())
   } catch (e) {
     res.status(500).json({ error: e.message })
   }
@@ -65,14 +64,10 @@ router.post('/subscribers', async (req, res) => {
     const member = resolveMemberByEmail(email, members)
     if (!member) return res.status(404).json({ error: 'E-mail não encontrado no workspace do ClickUp' })
 
-    const subscribers = await redisGet(SUBSCRIBERS_KEY, [])
-    if (!subscribers.find(s => s.userId === member.id)) {
-      subscribers.push({ email: member.email, userId: member.id, name: member.name })
-      await redisSet(SUBSCRIBERS_KEY, subscribers)
-    }
+    await addSubscriberRow(member)
 
     // Add as watcher (not assignee) to every existing notification card
-    const cardmap = await redisGet(CARDMAP_KEY, {})
+    const cardmap = await getCardmap()
     for (const entry of Object.values(cardmap)) {
       if (entry.taskId) {
         await clickup.updateTaskWatchers(entry.taskId, { add: [member.id] }).catch(() => {})
@@ -87,11 +82,9 @@ router.post('/subscribers', async (req, res) => {
 
 // -------- Core sync: call after events are saved --------
 
-const DEFAULT_NOTIFY_FIELDS = ['start_date', 'due_date']
-
 export async function syncEvents(events) {
-  const cardmap = await redisGet(CARDMAP_KEY, {})
-  const subscribers = await redisGet(SUBSCRIBERS_KEY, [])
+  const cardmap = await getCardmap()
+  const subscribers = await getSubscribers()
   const watcherIds = subscribers.map(s => s.userId)
 
   for (const ev of events) {
@@ -115,10 +108,7 @@ export async function syncEvents(events) {
       if (watcherIds.length) {
         await clickup.addComment(created.id, `📅 Nova campanha adicionada ao calendário: "${ev.name}" (${fmtDate(ev.start_date)} → ${fmtDate(ev.due_date)})`).catch(() => {})
       }
-      cardmap[ev.id] = {
-        taskId: created.id,
-        snapshot: { name: ev.name, start_date: ev.start_date, due_date: ev.due_date, status: ev.status, premissa: ev.premissa || null, type: ev.type, listLink: ev.listLink || null, photosDriveLink: ev.photosDriveLink || null },
-      }
+      await upsertCardEntry(ev.id, created.id, { name: ev.name, start_date: ev.start_date, due_date: ev.due_date, status: ev.status, premissa: ev.premissa || null, type: ev.type, listLink: ev.listLink || null, photosDriveLink: ev.photosDriveLink || null })
       continue
     }
 
@@ -155,13 +145,8 @@ export async function syncEvents(events) {
       await clickup.addComment(existing.taskId, `${text}\n\n(${ev.name})`).catch(() => {})
     }
 
-    cardmap[ev.id] = {
-      taskId: existing.taskId,
-      snapshot: { name: ev.name, start_date: ev.start_date, due_date: ev.due_date, status: ev.status, premissa: ev.premissa || null, type: ev.type, listLink: ev.listLink || null, photosDriveLink: ev.photosDriveLink || null },
-    }
+    await upsertCardEntry(ev.id, existing.taskId, { name: ev.name, start_date: ev.start_date, due_date: ev.due_date, status: ev.status, premissa: ev.premissa || null, type: ev.type, listLink: ev.listLink || null, photosDriveLink: ev.photosDriveLink || null })
   }
-
-  await redisSet(CARDMAP_KEY, cardmap)
 }
 
 export default router
