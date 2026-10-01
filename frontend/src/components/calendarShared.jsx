@@ -39,15 +39,15 @@ export function getEventsForDay(events, year, month, day) {
 
 export function Legend() {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', margin: '0 0 24px', padding: '10px 14px', background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radius }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 18px', margin: '0 0 28px', padding: '12px 16px', background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radius }}>
       {EVENT_TYPES.map(t => (
-        <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: theme.textMuted, fontWeight: 600 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: TYPE_COLORS[t], display: 'inline-block' }} />
+        <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: theme.textMuted, fontWeight: 500 }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: TYPE_COLORS[t], display: 'inline-block', flexShrink: 0 }} />
           {t}
         </span>
       ))}
-      <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: theme.textFaint, fontWeight: 600, marginLeft: 'auto' }}>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: theme.borderStrong, display: 'inline-block' }} />
+      <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, color: theme.textFaint, fontWeight: 500, marginLeft: 'auto' }}>
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: theme.borderStrong, display: 'inline-block', flexShrink: 0 }} />
         Cancelado
       </span>
     </div>
@@ -70,13 +70,13 @@ export function MonthGrid({ year, month, label, events, onEventClick, onDayClick
 
   return (
     <div>
-      <p style={{ fontSize: 11, fontWeight: 700, color: theme.textMuted, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 12px' }}>{label}</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 4, gap: 3 }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: theme.textMuted, letterSpacing: '0.06em', textTransform: 'uppercase', margin: '0 0 14px' }}>{label}</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6, gap: 4 }}>
         {DAYS_OF_WEEK.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 9.5, fontWeight: 700, color: theme.textFaint, letterSpacing: '0.06em', padding: '4px 0' }}>{d}</div>
+          <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: theme.textFaint, letterSpacing: '0.05em', padding: '4px 0' }}>{d}</div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
         {cells.map((day, i) => {
           if (!day) return <div key={`e-${i}`} />
           const dayEvs  = getEventsForDay(events, year, month, day)
@@ -88,17 +88,20 @@ export function MonthGrid({ year, month, label, events, onEventClick, onDayClick
               id={todayDay ? 'calendar-today-cell' : undefined}
               onClick={onDayClick ? () => onDayClick(year, month, day) : undefined}
               style={{
-                minHeight: 84, borderRadius: theme.radiusSm,
+                minHeight: 88, borderRadius: theme.radiusSm,
                 border: todayDay ? `1.5px solid ${theme.accent}` : `1px solid ${theme.border}`,
                 background: todayDay ? theme.accentBg : weekend ? theme.bgSubtle : theme.bg,
-                padding: '6px 7px', position: 'relative', overflow: 'hidden',
+                padding: '7px 7px', position: 'relative', overflow: 'hidden',
                 cursor: onDayClick ? 'pointer' : 'default',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 11, fontWeight: todayDay ? 800 : 500, color: todayDay ? theme.accent : weekend ? theme.textFaint : theme.textMuted, lineHeight: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontSize: 12, fontWeight: todayDay ? 700 : 500, color: todayDay ? theme.accent : weekend ? theme.textFaint : theme.textMuted, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                   {day}
                 </span>
+                {todayDay && (
+                  <span style={{ fontSize: 8, fontWeight: 700, color: theme.accent, letterSpacing: '0.06em', textTransform: 'uppercase' }}>hoje</span>
+                )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {dayEvs.map(ev => {
@@ -110,18 +113,15 @@ export function MonthGrid({ year, month, label, events, onEventClick, onDayClick
                     <div
                       key={ev.id}
                       onClick={e => { e.stopPropagation(); onEventClick(ev) }}
-                      style={{ background: color, opacity: dim, borderRadius: 3, padding: '3px 6px', cursor: 'pointer', textDecoration: cancelled ? 'line-through' : 'none' }}
+                      style={{ background: color, opacity: dim, borderRadius: 4, padding: '4px 7px', cursor: 'pointer', textDecoration: cancelled ? 'line-through' : 'none' }}
                     >
-                      <span style={{ fontSize: 9.5, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: '100%', letterSpacing: '0.02em' }}>
+                      <span style={{ fontSize: 10.5, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block', maxWidth: '100%', letterSpacing: '0.01em' }}>
                         {ev.name}
                       </span>
                     </div>
                   )
                 })}
               </div>
-              {todayDay && (
-                <div style={{ position: 'absolute', bottom: 4, right: 5, fontSize: 7.5, fontWeight: 800, color: theme.accent, letterSpacing: '0.08em', textTransform: 'uppercase' }}>hoje</div>
-              )}
             </div>
           )
         })}

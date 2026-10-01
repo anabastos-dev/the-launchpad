@@ -23,5 +23,6 @@ export const theme = {
   dangerBg:     'rgba(224,62,62,0.10)',
   radius:       8,
   radiusSm:     6,
-  font: `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`,
+  font:     `'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`,
+  fontMono: `'Geist Mono', 'SF Mono', Consolas, monospace`,
 }
