@@ -68,13 +68,23 @@ export default function MissionGantt({ compact = false, campaigns = [] }) {
         {withDates.map((c, idx) => {
           const startMs  = Number(c.start_date || c.due_date)
           const endMs    = Number(c.due_date)
+          const isPoint  = endMs === startMs
           const leftPct  = Math.max(0, toPct(startMs))
           const rightPct = Math.min(100, toPct(endMs) + (1 / totalDays) * 100)
-          const widthPct = Math.max(0.8, rightPct - leftPct)
+          // Most campaigns here only have a due_date, no real range — a bar
+          // sized to that near-zero span used to shrink to an unlabeled
+          // sliver. Floor it at a legible width, and for a true single-date
+          // milestone center the pill on that date instead of implying a
+          // span starting there.
+          const widthPct = Math.max(9, rightPct - leftPct)
+          const displayLeftPct = isPoint ? Math.max(0, leftPct - widthPct / 2) : leftPct
           const color    = barColor(c.status)
 
           return (
-            <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', borderBottom: idx < withDates.length - 1 ? `1px solid ${theme.border}` : 'none', minHeight: rowH }}>
+            <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', borderBottom: idx < withDates.length - 1 ? `1px solid ${theme.border}` : 'none', minHeight: rowH }}
+              onMouseEnter={e => e.currentTarget.style.background = theme.bgHover}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
               <Link to={`/campaigns/${c.id}`} state={{ name: c.name }} style={{ padding: '10px 12px 10px 14px', borderRight: `1px solid ${theme.border}`, textDecoration: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: color, flexShrink: 0 }} />
@@ -84,14 +94,12 @@ export default function MissionGantt({ compact = false, campaigns = [] }) {
               </Link>
 
               <div style={{ position: 'relative', padding: '10px 8px', display: 'flex', alignItems: 'center' }}>
-                <div style={{ position: 'absolute', top: 0, bottom: 0, left: `calc(${todayPct}% + 8px)`, width: 1, background: theme.accentBorder, zIndex: 2, pointerEvents: 'none' }} />
-                <div style={{ position: 'relative', width: '100%', height: 20 }}>
-                  <div style={{ position: 'absolute', left: `${leftPct}%`, width: `${widthPct}%`, height: '100%', background: color, borderRadius: 5, display: 'flex', alignItems: 'center', paddingLeft: 7, overflow: 'hidden', minWidth: 4 }}>
-                    {widthPct > 6 && (
-                      <span style={{ fontSize: 8.5, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '0.03em' }}>
-                        {fmtDay(startMs)}{endMs !== startMs ? ` → ${fmtDay(endMs)}` : ''}
-                      </span>
-                    )}
+                <div style={{ position: 'absolute', top: 0, bottom: 0, left: `calc(${todayPct}% + 8px)`, width: 1.5, background: theme.accent, opacity: 0.35, zIndex: 2, pointerEvents: 'none' }} />
+                <div style={{ position: 'relative', width: '100%', height: 22 }}>
+                  <div style={{ position: 'absolute', left: `${displayLeftPct}%`, width: `${widthPct}%`, height: '100%', background: color, borderRadius: 6, boxShadow: `0 1px 2px ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 7px', overflow: 'hidden', minWidth: 4 }}>
+                    <span style={{ fontSize: 9, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: '0.03em' }}>
+                      {isPoint ? fmtDay(startMs) : `${fmtDay(startMs)} → ${fmtDay(endMs)}`}
+                    </span>
                   </div>
                 </div>
               </div>
