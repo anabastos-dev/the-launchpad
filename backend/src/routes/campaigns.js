@@ -133,10 +133,22 @@ async function getAlerts(listId, force = false) {
   return alertas
 }
 
+// ACTIVE_CAMPAIGNS() dates are authored as plain "YYYY-MM-DD" strings for
+// readability, but every consumer (frontend + ClickUp task dates elsewhere)
+// expects ms-epoch strings, so convert at the response boundary.
+function toMs(dateStr) {
+  return dateStr ? String(new Date(dateStr).getTime()) : null
+}
+
 // GET /api/campaigns — returns configured active campaigns (each campaign = one ClickUp list)
 router.get('/', async (req, res) => {
   const finalized = await getFinalized()
-  res.json(ACTIVE_CAMPAIGNS().map(c => ({ ...c, finalized: finalized.includes(c.id) })))
+  res.json(ACTIVE_CAMPAIGNS().map(c => ({
+    ...c,
+    start_date: toMs(c.start_date),
+    due_date:   toMs(c.due_date),
+    finalized:  finalized.includes(c.id),
+  })))
 })
 
 // POST /api/campaigns/:id/finalize — mark campaign as finalized
