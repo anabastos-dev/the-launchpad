@@ -290,26 +290,34 @@ export default function AlertsPage() {
   ]
 
   return (
-    <div style={{ padding: '44px 52px 64px', maxWidth: 1140 }}>
+    <div className="risk-page" style={{ maxWidth: 1180 }}>
 
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 10px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 12 }}>
-          <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.03em', color: theme.text, margin: 0, lineHeight: 1 }}>Risk Signals</h1>
-          {!loading && !error && (
-            <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: theme.danger, fontWeight: 600 }}>{high.length} crítico{high.length !== 1 ? 's' : ''}</span>
-              <span style={{ color: theme.border, fontSize: 13 }}>·</span>
-              <span style={{ fontSize: 13, color: theme.warning, fontWeight: 600 }}>{medium.length} vencem hoje</span>
-              <span style={{ color: theme.border, fontSize: 13 }}>·</span>
-              <span style={{ fontSize: 13, color: theme.success, fontWeight: 600 }}>{visOpps.length} opportunit{visOpps.length !== 1 ? 'ies' : 'y'}</span>
-            </div>
-          )}
-          {loading && <span style={{ fontSize: 13, color: theme.textFaint }}>Carregando…</span>}
-          {error && <span style={{ fontSize: 13, color: theme.danger }}>{error}</span>}
+      {/* Header — a hero stat for the single most urgent number */}
+      <div className="risk-hero" style={{ marginBottom: 32, paddingBottom: 28, borderBottom: `1px solid ${theme.border}` }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 10px', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>Mission Control</p>
+          <h1 style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-0.03em', color: theme.text, margin: '0 0 8px', lineHeight: 1.05 }}>Risk Signals</h1>
+          <p style={{ fontSize: 13, color: theme.textMuted, margin: 0 }}>
+            {loading ? 'Carregando…' : error ? <span style={{ color: theme.danger }}>{error}</span> : (
+              <>{medium.length} vencem hoje · {visOpps.length} oportunidade{visOpps.length !== 1 ? 's' : ''} pra adiantar</>
+            )}
+          </p>
         </div>
-        <div style={{ height: 1, background: theme.border }} />
+
+        {!loading && !error && (
+          <>
+            <div className="risk-hero-divider" style={{ background: theme.border }} />
+            <div className="risk-hero-stat" style={{ paddingTop: 2 }}>
+              <p style={{ fontSize: 9.5, color: theme.textFaint, margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>
+                {high.length === 0 ? 'tudo no prazo' : 'tarefas críticas'}
+              </p>
+              <p style={{ fontSize: 44, fontWeight: 500, letterSpacing: '-0.03em', color: high.length > 0 ? theme.danger : theme.success, margin: 0, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                {high.length}
+              </p>
+              <p style={{ fontSize: 13, color: theme.textMuted, margin: '8px 0 0' }}>{high.length === 0 ? 'nenhum atraso agora' : `atrasada${high.length !== 1 ? 's' : ''} agora`}</p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Filters row: campaign pills · responsável selector · list/timeline toggle */}
@@ -414,6 +422,19 @@ export default function AlertsPage() {
           )}
         </>
       )}
+
+      <style>{`
+        .risk-page { padding: 48px 44px 64px; }
+        .risk-hero { display: flex; align-items: stretch; gap: 40px; }
+        .risk-hero-divider { width: 1px; flex-shrink: 0; }
+        .risk-hero-stat { width: 230px; flex-shrink: 0; }
+        @media (max-width: 680px) {
+          .risk-page { padding: 32px 20px 48px; }
+          .risk-hero { flex-direction: column; gap: 20px; }
+          .risk-hero-divider { display: none; }
+          .risk-hero-stat { width: 100%; }
+        }
+      `}</style>
     </div>
   )
 }
