@@ -37,6 +37,70 @@ export function getEventsForDay(events, year, month, day) {
   })
 }
 
+// Shared header for both calendar pages — title/actions next to a glanceable
+// "days to next campaign" stat, echoing the countdown pattern from the
+// reference tool Ana pointed at. `children` is the action-button row.
+export function CalendarHero({ eyebrow, title, subtitle, events, children }) {
+  const todayMs = Date.now()
+  const upcoming = events
+    .filter(e => e.status !== 'Cancelado' && e.start_date && Number(e.start_date) >= todayMs)
+    .sort((a, b) => Number(a.start_date) - Number(b.start_date))[0]
+  const daysToNext = upcoming ? Math.round((Number(upcoming.start_date) - todayMs) / 86400000) : null
+  const activeNow = events.filter(e => e.status !== 'Cancelado' && e.start_date && e.due_date
+    && Number(e.start_date) <= todayMs && Number(e.due_date) >= todayMs).length
+
+  return (
+    <div className="cal-hero" style={{ marginBottom: 36, paddingBottom: 32, borderBottom: `1px solid ${theme.border}` }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 10px', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>{eyebrow}</p>
+        <h1 style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-0.03em', color: theme.text, margin: '0 0 8px', lineHeight: 1.05 }}>{title}</h1>
+        <p style={{ fontSize: 13, color: theme.textMuted, margin: '0 0 22px', maxWidth: 440, lineHeight: 1.5 }}>{subtitle}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>{children}</div>
+      </div>
+
+      <div className="cal-hero-divider" style={{ background: theme.border }} />
+
+      <div className="cal-hero-stat" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingTop: 2 }}>
+        <div>
+          <p style={{ fontSize: 9.5, color: theme.textFaint, margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>
+            {upcoming ? (daysToNext === 0 ? 'estreia hoje' : daysToNext === 1 ? 'próxima campanha — amanhã' : 'próxima campanha em') : 'sem campanha futura'}
+          </p>
+          {upcoming ? (
+            <>
+              {daysToNext > 1 && (
+                <p style={{ fontSize: 44, fontWeight: 500, letterSpacing: '-0.03em', color: theme.text, margin: 0, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{daysToNext}<span style={{ fontSize: 13, fontWeight: 600, color: theme.textFaint, marginLeft: 6 }}>dias</span></p>
+              )}
+              <p style={{ fontSize: 13, color: theme.text, fontWeight: 600, margin: '8px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{upcoming.name}</p>
+            </>
+          ) : (
+            <p style={{ fontSize: 13, color: theme.textFaint, margin: 0 }}>nada agendado ainda</p>
+          )}
+        </div>
+        <p style={{ fontSize: 11, color: theme.textFaint, margin: 0, paddingTop: 16 }}>
+          <strong style={{ color: theme.textMuted }}>{activeNow}</strong> no ar agora · <strong style={{ color: theme.textMuted }}>{events.length}</strong> no total
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export function CalendarHeroStyles() {
+  return (
+    <style>{`
+      .cal-page { padding: 48px 44px 64px; }
+      .cal-hero { display: flex; align-items: stretch; gap: 40px; }
+      .cal-hero-divider { width: 1px; flex-shrink: 0; }
+      .cal-hero-stat { width: 230px; flex-shrink: 0; }
+      @media (max-width: 680px) {
+        .cal-page { padding: 32px 20px 48px; }
+        .cal-hero { flex-direction: column; gap: 20px; }
+        .cal-hero-divider { display: none; }
+        .cal-hero-stat { width: 100%; }
+      }
+    `}</style>
+  )
+}
+
 export function Legend() {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 18px', margin: '0 0 28px', padding: '12px 16px', background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radius }}>

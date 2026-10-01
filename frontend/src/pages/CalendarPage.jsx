@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api.js'
-import { EVENT_TYPES, TYPE_COLORS, Legend, MonthGrid, SubscribeModal, EventDetail, DetailPanelStyles } from '../components/calendarShared.jsx'
+import { EVENT_TYPES, TYPE_COLORS, Legend, MonthGrid, SubscribeModal, EventDetail, DetailPanelStyles, CalendarHero, CalendarHeroStyles } from '../components/calendarShared.jsx'
 import { theme } from '../theme.js'
 import { useTeam } from '../teamContext.jsx'
 
@@ -402,40 +402,36 @@ export default function CalendarPage() {
   const year  = today.getFullYear()
 
   return (
-    <div style={{ padding: '40px 44px 64px', maxWidth: 1100 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
-        <div>
-          <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Mission Control</p>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em', color: theme.text, margin: '0 0 6px', lineHeight: 1 }}>Calendário Editorial</h1>
-          <p style={{ fontSize: 12, color: theme.textMuted, margin: 0 }}>
-            {events.length} evento{events.length !== 1 ? 's' : ''}{canEdit ? ' · clique em um dia para adicionar' : ''}
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            onClick={() => setSubscribeOpen(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: theme.textMuted, cursor: 'pointer' }}
-          >🔔 Receber mudanças e alertas</button>
-          {canEdit && (
-            <>
-              <button
-                onClick={handleSync}
-                title={dirty ? 'Você tem alterações não publicadas' : ''}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: dirty ? theme.accentBg : theme.bgSubtle, border: `1px solid ${dirty ? theme.accentBorder : theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: dirty ? theme.accent : theme.textMuted, cursor: 'pointer' }}
-              >
-                {dirty && !syncMsg && <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.accent, display: 'inline-block' }} />}
-                {syncMsg || (dirty ? 'Publicar alterações' : '↑ Publicar')}
-              </button>
-              <button
-                onClick={() => setModal({})}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.accent, border: 'none', borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer' }}
-              >
-              + Novo evento
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+    <div className="cal-page" style={{ maxWidth: 1180 }}>
+      <CalendarHero
+        eyebrow="Mission Control"
+        title="Calendário Editorial"
+        subtitle={canEdit ? 'Clique em um dia para adicionar um evento. Nada sai daqui até você clicar em Publicar.' : 'Todas as campanhas de marketing em um só lugar.'}
+        events={events}
+      >
+        <button
+          onClick={() => setSubscribeOpen(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '8px 14px', fontSize: 11.5, fontWeight: 600, color: theme.textMuted, cursor: 'pointer' }}
+        >🔔 Receber mudanças e alertas</button>
+        {canEdit && (
+          <>
+            <button
+              onClick={handleSync}
+              title={dirty ? 'Você tem alterações não publicadas' : ''}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: dirty ? theme.accentBg : theme.bgSubtle, border: `1px solid ${dirty ? theme.accentBorder : theme.border}`, borderRadius: theme.radiusSm, padding: '8px 14px', fontSize: 11.5, fontWeight: 600, color: dirty ? theme.accent : theme.textMuted, cursor: 'pointer' }}
+            >
+              {dirty && !syncMsg && <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.accent, display: 'inline-block' }} />}
+              {syncMsg || (dirty ? 'Publicar alterações' : '↑ Publicar')}
+            </button>
+            <button
+              onClick={() => setModal({})}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.accent, border: 'none', borderRadius: theme.radiusSm, padding: '8px 14px', fontSize: 11.5, fontWeight: 600, color: '#fff', cursor: 'pointer' }}
+            >
+            + Novo evento
+            </button>
+          </>
+        )}
+      </CalendarHero>
 
       <Legend />
 
@@ -452,20 +448,6 @@ export default function CalendarPage() {
             onEventClick={ev => canEdit ? setModal({ ...ev }) : setViewing(ev)}
             onDayClick={canEdit ? handleDayClick : undefined} />
         ))}
-
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-          {EVENT_TYPES.map(t => (
-            <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={{ width: 10, height: 10, background: TYPE_COLORS[t], borderRadius: 2 }} />
-              <span style={{ fontSize: 10, color: theme.textFaint, fontWeight: 500 }}>{t}</span>
-            </div>
-          ))}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ fontSize: 10 }}>⚽</span>
-            <span style={{ fontSize: 10, color: theme.textFaint, fontWeight: 500 }}>Copa do Brasil</span>
-          </div>
-        </div>
       </div>
 
       {modal !== null && (
@@ -480,6 +462,7 @@ export default function CalendarPage() {
       {viewing && <EventDetail event={viewing} onClose={() => setViewing(null)} />}
       {subscribeOpen && <SubscribeModal onClose={() => setSubscribeOpen(false)} />}
       <DetailPanelStyles />
+      <CalendarHeroStyles />
     </div>
   )
 }
