@@ -40,16 +40,6 @@ function riskFromStatus(status) {
   return STATUS_RISK[(status || '').toLowerCase()] || 'OK'
 }
 
-function MetricCard({ label, value, sub, valueColor }) {
-  return (
-    <div style={{ background: theme.bg, padding: '18px 20px' }}>
-      <p style={{ fontSize: 10, fontWeight: 700, color: theme.textFaint, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 10px' }}>{label}</p>
-      <p style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.03em', color: valueColor, margin: '0 0 4px', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</p>
-      <p style={{ fontSize: 11, color: theme.textMuted, margin: 0 }}>{sub}</p>
-    </div>
-  )
-}
-
 function CampaignCard({ c, finalizing, onFinalize }) {
   const risk = riskFromStatus(c.status)
   const r    = RISK_CFG[risk] || RISK_CFG.OK
@@ -131,40 +121,57 @@ export default function Dashboard() {
   const today      = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
-    <div style={{ padding: '40px 44px 64px', maxWidth: 1120 }}>
+    <div className="dash-page" style={{ maxWidth: 1180 }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32 }}>
-        <div>
-          <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>
+      {/* Header — title/sync next to a "days to next launch" hero stat */}
+      <div className="dash-hero" style={{ marginBottom: 32, paddingBottom: 28, borderBottom: `1px solid ${theme.border}` }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 10, color: theme.textFaint, margin: '0 0 10px', letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600 }}>
             {greeting()}, Ana
           </p>
-          <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.03em', color: theme.text, margin: '0 0 6px', lineHeight: 1 }}>
+          <h1 style={{ fontSize: 34, fontWeight: 500, letterSpacing: '-0.03em', color: theme.text, margin: '0 0 8px', lineHeight: 1.05 }}>
             Mission Control
           </h1>
-          <p style={{ fontSize: 12, color: theme.textMuted, margin: 0 }}>
+          <p style={{ fontSize: 13, color: theme.textMuted, margin: '0 0 22px' }}>
             {today}&ensp;·&ensp;
             <span style={{ color: theme.accent, fontWeight: 600 }}>{active.length} active missions</span>
           </p>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bgSubtle, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '8px 14px', fontSize: 11.5, fontWeight: 600, color: syncing ? theme.textFaint : theme.textMuted, cursor: syncing ? 'default' : 'pointer' }}>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }}>
+              <path d="M9.5 5.5A4 4 0 1 1 5.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              <polyline points="9.5,1.5 9.5,5.5 5.5,5.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {syncing ? 'Syncing…' : 'Sync'}
+          </button>
         </div>
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, background: theme.bg, border: `1px solid ${theme.border}`, borderRadius: theme.radiusSm, padding: '7px 14px', fontSize: 11, fontWeight: 600, color: syncing ? theme.textFaint : theme.textMuted, cursor: syncing ? 'default' : 'pointer', letterSpacing: '0.02em' }}>
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }}>
-            <path d="M9.5 5.5A4 4 0 1 1 5.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-            <polyline points="9.5,1.5 9.5,5.5 5.5,5.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          {syncing ? 'Syncing…' : 'Sync'}
-        </button>
-      </div>
 
-      {/* Metric cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, marginBottom: 32, border: `1px solid ${theme.border}`, borderRadius: theme.radius + 4, overflow: 'hidden', background: theme.border }}>
-        <MetricCard label="Active missions"   value={loading ? '—' : active.length}    sub="campanhas em andamento"    valueColor={theme.text} />
-        <MetricCard label="Risk signals"      value={loading ? '—' : critical + medium} sub={`${critical} critical · ${medium} medium`} valueColor={critical > 0 ? theme.danger : theme.success} />
-        <MetricCard label="Finalizadas"       value={loading ? '—' : finalized.length} sub="campanhas concluídas"       valueColor={theme.text} />
-        <MetricCard label="Next launch"       value={loading ? '—' : nextLabel}       sub={nextSub}                  valueColor={daysToNext !== null && daysToNext <= 3 ? theme.danger : theme.text} />
+        <div className="dash-hero-divider" style={{ background: theme.border }} />
+
+        <div className="dash-hero-stat" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingTop: 2 }}>
+          <div>
+            <p style={{ fontSize: 9.5, color: theme.textFaint, margin: '0 0 8px', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>
+              {!nextLaunch ? 'sem lançamento futuro' : daysToNext <= 0 ? 'lançamento' : 'próximo lançamento em'}
+            </p>
+            {nextLaunch ? (
+              <>
+                {daysToNext > 0 ? (
+                  <p style={{ fontSize: 44, fontWeight: 500, letterSpacing: '-0.03em', color: daysToNext <= 3 ? theme.danger : theme.text, margin: 0, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{daysToNext}<span style={{ fontSize: 13, fontWeight: 600, color: theme.textFaint, marginLeft: 6 }}>dias</span></p>
+                ) : (
+                  <p style={{ fontSize: 22, fontWeight: 600, color: theme.danger, margin: 0 }}>{nextLabel}</p>
+                )}
+                <p style={{ fontSize: 13, color: theme.text, fontWeight: 600, margin: '8px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextSub}</p>
+              </>
+            ) : (
+              <p style={{ fontSize: 13, color: theme.textFaint, margin: 0 }}>nada agendado ainda</p>
+            )}
+          </div>
+          <p style={{ fontSize: 11, color: theme.textFaint, margin: 0, paddingTop: 16 }}>
+            <strong style={{ color: critical > 0 ? theme.danger : theme.textMuted }}>{critical + medium}</strong> sinal{critical + medium !== 1 ? 'is' : ''} de risco · <strong style={{ color: theme.textMuted }}>{finalized.length}</strong> finalizadas
+          </p>
+        </div>
       </div>
 
       {/* Launch Timeline */}
@@ -220,7 +227,19 @@ export default function Dashboard() {
         )}
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg) } }
+        .dash-page { padding: 48px 44px 64px; }
+        .dash-hero { display: flex; align-items: stretch; gap: 40px; }
+        .dash-hero-divider { width: 1px; flex-shrink: 0; }
+        .dash-hero-stat { width: 230px; flex-shrink: 0; }
+        @media (max-width: 680px) {
+          .dash-page { padding: 32px 20px 48px; }
+          .dash-hero { flex-direction: column; gap: 20px; }
+          .dash-hero-divider { display: none; }
+          .dash-hero-stat { width: 100%; }
+        }
+      `}</style>
     </div>
   )
 }
